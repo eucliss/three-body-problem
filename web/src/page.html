@@ -1,0 +1,498 @@
+<title>Three-Body Observatory</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="The Newtonian three-body problem: the general equation, a regularized machine-precision solver running live, chaos diagnostics and a fate map of 96,000 integrations.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: observatory console. A wide sky stage with an instrument rail beside it, then a
+   single reading column for the mathematics. Deliberately single-theme: a night sky. */
+:root {
+  color-scheme: dark;
+  --void: #060912;
+  --panel: #0b1020;
+  --raise: #121a2f;
+  --line: #1c2641;
+  --line-strong: #2a3657;
+  --ink: #e6e9f2;
+  --muted: #949db5;
+  --faint: #5d6684;
+  --accent: #aab8ff;
+  --accent-ink: #0b1020;
+  --b1: #c2841a; --b2: #3a91d4; --b3: #de5577;
+  --g1: #f6c66a; --g2: #8fd0ff; --g3: #ff9bb3;
+  --ok: #5cc48d; --warn: #e3a94b; --crit: #ef7468;
+  --f-display: "Cormorant Garamond", "Cormorant", "EB Garamond", Garamond, "Times New Roman", serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --step--1: 0.8125rem; --step-0: 0.9375rem; --step-1: 1.125rem; --step-2: 1.5rem; --step-3: 2.25rem; --step-4: clamp(2.5rem, 5vw, 3.75rem);
+}
+html { background: var(--void); }
+body { background: var(--void); color: var(--ink); font-family: var(--f-body); font-size: var(--step-0); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1480px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 56px; }
+a { color: var(--accent); text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* masthead */
+.masthead { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 32px; align-items: end; padding-block: 8px 18px; }
+.eyebrow { font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0; }
+h1 { font-family: var(--f-display); font-weight: 600; font-size: var(--step-4); line-height: 1; margin: 6px 0 0; letter-spacing: -0.01em; text-wrap: balance; }
+h1 em { font-style: italic; font-weight: 500; color: var(--accent); }
+.lede { max-width: 62ch; color: var(--muted); margin: 10px 0 0; }
+.eq-hero { color: var(--ink); justify-self: end; max-width: 100%; overflow-x: auto; padding: 4px 0; }
+.eq-hero svg { max-width: 100%; height: auto; }
+.eq-hero-cap { font-size: var(--step--1); color: var(--faint); text-align: right; margin-top: 2px; }
+
+/* console */
+.console { display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto auto; gap: 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); }
+.stage { position: relative; height: clamp(440px, 74vh, 860px); background: radial-gradient(ellipse at 50% 45%, #0b1226 0%, var(--void) 70%); overflow: hidden; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.stage.dragging { cursor: grabbing; }
+.stage.editing { cursor: default; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hud { position: absolute; z-index: 2; pointer-events: none; }
+.hud > * { pointer-events: auto; }
+.hud-tl { top: 14px; left: 16px; right: 140px; display: grid; gap: 6px; justify-items: start; }
+.hud-name { font-family: var(--f-display); font-style: italic; font-weight: 600; font-size: 1.75rem; line-height: 1.05; text-shadow: 0 1px 12px rgba(6, 9, 18, 0.9); }
+.hud-time { font-family: var(--f-mono); font-size: var(--step--1); color: var(--muted); text-shadow: 0 1px 8px rgba(6, 9, 18, 0.9); }
+.hud-time b { color: var(--ink); font-weight: 500; }
+.pill { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px 4px 8px; border-radius: 999px; background: rgba(11, 16, 32, 0.78); border: 1px solid var(--line-strong); font-size: var(--step--1); color: var(--ink); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); max-width: 100%; }
+.pill i { font-style: normal; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; box-shadow: 0 0 0 3px rgba(148, 157, 181, 0.15); }
+.pill[data-state="periodic"] i { background: var(--accent); box-shadow: 0 0 0 3px rgba(170, 184, 255, 0.18); }
+.pill[data-state="interplay"] i { background: var(--warn); box-shadow: 0 0 0 3px rgba(227, 169, 75, 0.18); }
+.pill[data-state="hierarchical"] i { background: var(--ok); box-shadow: 0 0 0 3px rgba(92, 196, 141, 0.18); }
+.pill[data-state="escape"] i { background: var(--crit); box-shadow: 0 0 0 3px rgba(239, 116, 104, 0.18); }
+.pill[data-state="collision"] i { background: var(--crit); }
+.hud-tr { top: 14px; right: 14px; display: flex; gap: 6px; }
+.hud-bl { left: 16px; bottom: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; right: 16px; }
+.legend-item { display: inline-flex; align-items: center; gap: 7px; font-family: var(--f-mono); font-size: 0.75rem; color: var(--muted); text-shadow: 0 1px 6px rgba(6, 9, 18, 0.9); }
+.legend-item b { color: var(--ink); font-weight: 500; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.hud-hint { left: 50%; bottom: 46px; transform: translateX(-50%); font-size: var(--step--1); color: var(--ink); background: rgba(11, 16, 32, 0.85); border: 1px solid var(--line-strong); padding: 6px 12px; border-radius: 8px; white-space: nowrap; max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis; }
+.seg { display: inline-flex; background: rgba(11, 16, 32, 0.8); border: 1px solid var(--line-strong); border-radius: 8px; padding: 2px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.seg button { font: 500 0.75rem var(--f-body); color: var(--muted); background: transparent; border: 0; border-radius: 6px; padding: 5px 9px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--raise); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.seg button:hover { color: var(--ink); }
+
+/* transport */
+.transport { grid-column: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 14px; border-top: 1px solid var(--line); background: var(--panel); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font: 500 var(--step--1) var(--f-body); color: var(--ink); background: var(--raise); border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 12px; cursor: pointer; min-height: 34px; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); min-width: 88px; }
+.btn svg { width: 14px; height: 14px; }
+.speed { display: flex; align-items: center; gap: 10px; flex: 1 1 220px; min-width: 0; }
+.speed label { font-size: var(--step--1); color: var(--muted); white-space: nowrap; }
+.speed output { font-family: var(--f-mono); font-size: var(--step--1); color: var(--ink); white-space: nowrap; min-width: 9ch; }
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; min-width: 0; height: 22px; background: transparent; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track { height: 3px; background: var(--line-strong); border-radius: 2px; }
+input[type="range"]::-moz-range-track { height: 3px; background: var(--line-strong); border-radius: 2px; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); margin-top: -5.5px; border: 2px solid var(--panel); }
+input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 2px solid var(--panel); }
+.perf { font-family: var(--f-mono); font-size: 0.75rem; color: var(--faint); white-space: nowrap; }
+
+/* rail */
+.rail { grid-column: 2; grid-row: 1 / span 2; border-left: 1px solid var(--line); overflow-y: auto; max-height: calc(clamp(440px, 74vh, 860px) + 56px); background: var(--panel); }
+.rail section { padding: 14px 16px 16px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
+.rail h2 { font: 600 0.6875rem var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.rail h2 span { letter-spacing: 0.02em; text-transform: none; font-weight: 400; color: var(--faint); }
+select, input[type="number"], input[type="text"] { font: 400 var(--step--1) var(--f-body); color: var(--ink); background: var(--raise); border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 10px; width: 100%; min-width: 0; }
+select { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 16px) 52%, calc(100% - 11px) 52%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 28px; }
+optgroup { color: var(--muted); background: var(--panel); }
+option { color: var(--ink); background: var(--panel); }
+.blurb { font-size: var(--step--1); color: var(--muted); margin: 0; line-height: 1.5; }
+.blurb b { color: var(--ink); font-weight: 500; }
+.source { font-size: 0.75rem; color: var(--faint); margin: 0; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.mass { display: grid; grid-template-columns: 16px 1fr 70px; gap: 10px; align-items: center; }
+.mass output { font-family: var(--f-mono); font-size: 0.75rem; text-align: right; color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 0.75rem var(--f-body); color: var(--muted); background: transparent; border: 1px solid var(--line-strong); border-radius: 999px; padding: 5px 11px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; border: 1px solid var(--faint); }
+.chip[aria-pressed="true"] { color: var(--ink); border-color: var(--accent); background: rgba(170, 184, 255, 0.08); }
+.chip[aria-pressed="true"]::before { background: var(--accent); border-color: var(--accent); }
+.chip kbd { font-family: var(--f-mono); font-size: 0.6875rem; color: var(--faint); }
+details.ics summary { cursor: pointer; font-size: var(--step--1); color: var(--muted); }
+details.ics summary:hover { color: var(--ink); }
+.ic-table { overflow-x: auto; margin-top: 8px; }
+.ic-table table { border-collapse: collapse; width: 100%; font-family: var(--f-mono); font-size: 0.6875rem; }
+.ic-table th { color: var(--faint); font-weight: 400; text-align: left; padding: 2px 3px; }
+.ic-table td { padding: 2px 2px; }
+.ic-table input { padding: 4px 4px; font: 400 0.6875rem var(--f-mono); width: 58px; border-radius: 5px; }
+.inline-field { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.inline-field label { display: grid; gap: 4px; font-size: 0.75rem; color: var(--muted); }
+.readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin: 0; }
+.readouts div { display: flex; justify-content: space-between; gap: 8px; font-size: 0.75rem; border-bottom: 1px dotted var(--line); padding-bottom: 3px; min-width: 0; }
+.readouts dt { color: var(--muted); white-space: nowrap; }
+.readouts dd { margin: 0; font-family: var(--f-mono); font-variant-numeric: tabular-nums; color: var(--ink); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chart { display: grid; gap: 4px; }
+.chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 0.75rem; color: var(--muted); }
+.chart-head b { color: var(--ink); font-weight: 500; }
+.chart-head .mono { color: var(--ink); }
+.chart canvas { width: 100%; height: 96px; display: block; background: rgba(6, 9, 18, 0.55); border: 1px solid var(--line); border-radius: 8px; }
+.chart .legend { display: flex; gap: 12px; flex-wrap: wrap; }
+.sphere-wrap { display: grid; grid-template-columns: 132px 1fr; gap: 12px; align-items: center; }
+.sphere-wrap canvas { width: 132px; height: 132px; background: transparent; border: 0; }
+.sphere-key { font-size: 0.75rem; color: var(--muted); display: grid; gap: 4px; }
+.sphere-key span { display: flex; gap: 7px; align-items: center; }
+.tooltip { position: fixed; z-index: 20; pointer-events: none; background: rgba(11, 16, 32, 0.95); border: 1px solid var(--line-strong); color: var(--ink); font: 400 0.75rem var(--f-mono); padding: 6px 9px; border-radius: 7px; white-space: nowrap; transform: translate(12px, -50%); }
+.tooltip .k { color: var(--muted); }
+
+/* essay */
+.essay { max-width: 1100px; margin: 64px auto 0; display: grid; gap: 72px; }
+.essay section { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 12px 40px; }
+.essay .label { font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); padding-top: 12px; border-top: 1px solid var(--line-strong); align-self: start; }
+.essay .body { min-width: 0; border-top: 1px solid var(--line); padding-top: 4px; }
+.essay h2 { font-family: var(--f-display); font-weight: 600; font-size: var(--step-3); line-height: 1.1; margin: 0 0 16px; text-wrap: balance; }
+.essay h3 { font-family: var(--f-display); font-weight: 600; font-style: italic; font-size: var(--step-2); margin: 32px 0 8px; }
+.essay p, .essay li { max-width: 68ch; color: #cfd4e3; }
+.essay p { margin: 0 0 14px; }
+.essay strong { color: var(--ink); font-weight: 600; }
+.eq { margin: 18px 0 22px; padding: 18px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; color: var(--ink); }
+.eq.main { padding: 26px 24px; border-color: var(--line-strong); }
+.eq svg { max-width: none; }
+.eq-note { font-size: var(--step--1); color: var(--muted); margin-top: -12px; }
+.essay ol, .essay ul { padding-left: 1.2em; margin: 0 0 14px; }
+.essay li { margin-bottom: 8px; }
+.math-inline svg { vertical-align: middle; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 18px 0; }
+.fact { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--panel); }
+.fact .n { font-family: var(--f-mono); font-size: var(--step-1); color: var(--ink); }
+.fact .d { font-size: var(--step--1); color: var(--muted); }
+.check { list-style: none; padding: 0 !important; }
+.check li { display: grid; grid-template-columns: 18px 1fr; gap: 8px; }
+.check li::before { content: "✓"; color: var(--ok); font-weight: 600; }
+.converter { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-items: end; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin: 16px 0; }
+.converter label { display: grid; gap: 4px; font-size: 0.75rem; color: var(--muted); }
+.converter .result { grid-column: 1 / -1; font-family: var(--f-mono); font-size: var(--step--1); color: var(--ink); border-top: 1px solid var(--line); padding-top: 10px; }
+.fatemap { margin: 18px 0 8px; position: relative; }
+.fatemap canvas { width: 100%; height: auto; display: block; border-radius: 10px; border: 1px solid var(--line-strong); cursor: crosshair; image-rendering: pixelated; aspect-ratio: 5 / 3; max-width: 100%; }
+.fatemap .overlay { position: absolute; inset: 0; pointer-events: none; image-rendering: auto; border-color: transparent; cursor: default; }
+.fate-seg { margin-top: 6px; }
+.fate-legend { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; font-size: var(--step--1); color: var(--muted); margin-top: 10px; }
+.fate-legend .sw { display: inline-block; width: 26px; height: 10px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+.fate-legend .ramp { display: inline-block; width: 120px; height: 10px; border-radius: 3px; vertical-align: -1px; margin: 0 6px; background: linear-gradient(90deg, #eceffd, #788ae9 50%, #161b3a); }
+.refs { font-size: var(--step--1); color: var(--muted); }
+.refs li { color: var(--muted); }
+footer { max-width: 1100px; margin: 72px auto 0; padding-top: 18px; border-top: 1px solid var(--line); font-size: 0.75rem; color: var(--faint); }
+
+@media (max-width: 980px) {
+  .console { grid-template-columns: minmax(0, 1fr); }
+  .rail { grid-column: 1; grid-row: auto; border-left: 0; border-top: 1px solid var(--line); max-height: none; }
+  .stage { height: min(78vh, 112vw); min-height: 360px; }
+  .masthead { grid-template-columns: minmax(0, 1fr); }
+  .eq-hero { justify-self: start; }
+  .eq-hero-cap { text-align: left; }
+  .essay section { grid-template-columns: minmax(0, 1fr); }
+  .essay .label { border-top: 0; padding-top: 0; }
+}
+@media (max-width: 520px) {
+  .hud-name { font-size: 1.35rem; }
+  .hud-tl { right: 16px; top: 52px; }
+  .hud-tr { left: 12px; right: auto; top: 12px; }
+  .hud-hint { white-space: normal; text-align: center; bottom: 52px; }
+  .sphere-wrap { grid-template-columns: 110px 1fr; }
+  .sphere-wrap canvas { width: 110px; height: 110px; }
+  .essay h2 { font-size: 1.875rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">Newtonian gravity · three point masses · no closed-form solution</p>
+      <h1>Three-Body <em>Observatory</em></h1>
+      <p class="lede">One equation governs every system of three stars, planets or moons. There is no formula that solves it, so this page solves it the way astronomers do: numerically, live in your browser, to about twelve significant digits.</p>
+    </div>
+    <div>
+      <div class="eq-hero">{{EQ:hero}}</div>
+      <div class="eq-hero-cap">for i = 1, 2, 3 · the whole problem</div>
+    </div>
+  </header>
+
+  <section class="console" aria-label="Simulator">
+    <div class="stage" id="stage">
+      <canvas id="stars" aria-hidden="true"></canvas>
+      <canvas id="field" aria-hidden="true"></canvas>
+      <canvas id="sky" role="img" aria-label="Live simulation of three gravitating bodies"></canvas>
+      <div class="hud hud-tl">
+        <div class="hud-name" id="hudName">Figure-eight</div>
+        <div class="hud-time" id="hudTime">t = 0.00</div>
+        <div class="pill" id="pill" data-state="periodic"><i></i><span id="pillText">Periodic orbit</span></div>
+      </div>
+      <div class="hud hud-tr">
+        <div class="seg" role="group" aria-label="View">
+          <button type="button" id="viewPlane" aria-pressed="true" title="Look down on the orbital plane (V)">Plane</button>
+          <button type="button" id="view3d" aria-pressed="false" title="Tilted 3D view with the gravity well (V)">3D</button>
+        </div>
+      </div>
+      <div class="hud hud-bl" id="hudLegend"></div>
+      <div class="hud hud-hint" id="hint" hidden>Paused · drag a star to move it · drag an arrow tip to change its velocity</div>
+    </div>
+
+    <div class="transport">
+      <button class="btn primary" id="play" type="button" title="Play / pause (space)"><svg viewBox="0 0 14 14" aria-hidden="true"><path id="playIcon" d="M3 2l9 5-9 5z" fill="currentColor"/></svg><span id="playLabel">Pause</span></button>
+      <button class="btn" id="restart" type="button" title="Restart from the initial conditions (R)"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 2a5 5 0 1 1-4.6 3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M1.5 1.8v3.6h3.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Restart</button>
+      <div class="speed">
+        <label for="speed">Speed</label>
+        <input type="range" id="speed" min="0" max="100" step="0.5" value="50" aria-describedby="speedOut">
+        <output id="speedOut" for="speed">1.0 t/s</output>
+      </div>
+      <span class="perf" id="perf"></span>
+    </div>
+
+    <aside class="rail" aria-label="Controls and instruments">
+      <section>
+        <h2><label for="preset">System</label></h2>
+        <select id="preset"></select>
+        <p class="blurb" id="blurb"></p>
+        <p class="source" id="source"></p>
+        <div class="row" id="randomRow" hidden><button class="btn" id="reroll" type="button">New random triple</button><span class="source" id="seedLabel"></span></div>
+      </section>
+
+      <section>
+        <h2>Bodies <span id="massNote">masses, G = 1</span></h2>
+        <div id="massRows"></div>
+        <details class="ics" id="icDetails">
+          <summary>Initial conditions (edit any value)</summary>
+          <div class="ic-table"><table id="icTable" aria-label="Initial positions and velocities"></table></div>
+        </details>
+        <div class="inline-field">
+          <label for="tol">Solver tolerance
+            <select id="tol">
+              <option value="1e-8">1e-8 (fast)</option>
+              <option value="1e-10">1e-10</option>
+              <option value="1e-11" selected>1e-11</option>
+              <option value="1e-12">1e-12</option>
+              <option value="1e-13">1e-13 (strict)</option>
+            </select>
+          </label>
+          <label for="eps">Softening ε
+            <select id="eps">
+              <option value="0" selected>0 (point masses)</option>
+              <option value="0.01">0.01</option>
+              <option value="0.05">0.05</option>
+              <option value="0.2">0.2</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <h2>Display <span>keys in brackets</span></h2>
+        <div class="chips" id="chips">
+          <button type="button" class="chip" data-opt="trails" aria-pressed="true">Trails <kbd>L</kbd></button>
+          <button type="button" class="chip" data-opt="field" aria-pressed="true">Gravity field <kbd>F</kbd></button>
+          <button type="button" class="chip" data-opt="twin" aria-pressed="false">Butterfly twin <kbd>B</kbd></button>
+          <button type="button" class="chip" data-opt="rotating" aria-pressed="false">Co-rotating frame <kbd>C</kbd></button>
+          <button type="button" class="chip" data-opt="velocity" aria-pressed="false">Velocities</button>
+          <button type="button" class="chip" data-opt="forces" aria-pressed="false">Forces</button>
+          <button type="button" class="chip" data-opt="labels" aria-pressed="true">Labels</button>
+          <button type="button" class="chip" data-opt="autofit" aria-pressed="true">Auto-frame</button>
+        </div>
+        <div class="inline-field">
+          <label for="trailLen">Trail length <output id="trailOut" class="mono">6.3</output>
+            <input type="range" id="trailLen" min="0" max="100" value="50">
+          </label>
+          <label for="delta">Twin offset δ
+            <select id="delta">
+              <option value="1e-3">10⁻³</option>
+              <option value="1e-6">10⁻⁶</option>
+              <option value="1e-9" selected>10⁻⁹</option>
+              <option value="1e-12">10⁻¹²</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <h2>Instruments <span id="stateWord"></span></h2>
+        <dl class="readouts">
+          <div><dt>Energy E</dt><dd id="rE">–</dd></div>
+          <div><dt>|ΔE / E₀|</dt><dd id="rdE">–</dd></div>
+          <div><dt>|L|</dt><dd id="rL">–</dd></div>
+          <div><dt>|ΔL|</dt><dd id="rdL">–</dd></div>
+          <div><dt>Steps</dt><dd id="rSteps">–</dd></div>
+          <div><dt>Force evals</dt><dd id="rEvals">–</dd></div>
+          <div><dt>Last Δt</dt><dd id="rDt">–</dd></div>
+          <div><dt>Closest r</dt><dd id="rMin">–</dd></div>
+          <div><dt>Tightest pair</dt><dd id="rPair">–</dd></div>
+          <div><dt>a · e</dt><dd id="rAE">–</dd></div>
+        </dl>
+        <div class="chart">
+          <div class="chart-head"><b>Energy error</b><span class="mono" id="cEval">log₁₀ |ΔE/E₀|</span></div>
+          <canvas id="chartE" height="96"></canvas>
+        </div>
+        <div class="chart">
+          <div class="chart-head"><b>Nearest-neighbour distance</b><span class="mono">log scale</span></div>
+          <canvas id="chartR" height="96"></canvas>
+          <div class="legend" id="chartRLegend"></div>
+        </div>
+        <div class="chart" id="twinChartWrap">
+          <div class="chart-head"><b>Twin separation</b><span class="mono" id="lyap">turn on the twin</span></div>
+          <canvas id="chartS" height="96"></canvas>
+        </div>
+        <div class="chart">
+          <div class="chart-head"><b>Shape sphere</b><span>Montgomery 1998</span></div>
+          <div class="sphere-wrap">
+            <canvas id="sphere" width="132" height="132" aria-label="Shape sphere: the triangle's shape as a point on a sphere"></canvas>
+            <div class="sphere-key">
+              <span><span class="dot" style="background: var(--accent)"></span>poles: Lagrange triangles</span>
+              <span><span class="dot" style="background: var(--muted)"></span>equator: collinear, Euler points</span>
+              <span><span class="dot" style="background: var(--crit)"></span>×: binary collisions</span>
+              <span id="periodRead" class="mono" style="color: var(--ink)"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </section>
+
+  <main class="essay">
+    <section id="equation">
+      <div class="label">The equation</div>
+      <div class="body">
+        <h2>Every body pulls on every other body</h2>
+        <p>Give each body a position <span class="math-inline">{{IEQ:ri}}</span> and a mass <span class="math-inline">{{IEQ:mi}}</span>. Newton's law of gravitation and his second law combine into one equation per body:</p>
+        <div class="eq main">{{EQ:main}}</div>
+        <p class="eq-note">G is the gravitational constant. ε is an optional softening length; real point masses have ε = 0, which is the default here.</p>
+        <p>That line is fully general. Stars, planets, moons and black holes (far from the horizon) all obey it. The only inputs are three masses and the starting positions and velocities. Written out for three bodies it is:</p>
+        <div class="eq">{{EQ:expanded}}</div>
+        <p>That makes 18 coupled first-order differential equations: three position components and three velocity components for each body. The same system in Hamiltonian form, which is what the solver actually works with:</p>
+        <div class="eq">{{EQ:hamiltonian}}</div>
+        <h3>The triangle form</h3>
+        <p>Lagrange noticed you can drop the centre of mass entirely and follow the triangle's sides instead. With <span class="math-inline">{{IEQ:sides}}</span>, the sides always close up, and each obeys a Kepler law plus one shared coupling term:</p>
+        <div class="eq">{{EQ:symmetric}}</div>
+        <p>Without the coupling term <strong>S</strong> each side would be an independent two-body problem with a closed-form ellipse. That one shared term is where all the difficulty lives.</p>
+        <h3>Planets or stars: one equation at any scale</h3>
+        <p>Pick a length unit L and a mass unit M. Measuring time in units of t<sub>*</sub> removes G from the equation completely:</p>
+        <div class="eq">{{EQ:scaling}}</div>
+        <p>So one dimensionless solution describes every system with the same mass ratios and shape. The simulator runs with G = 1. This converter turns its time units into real ones:</p>
+        <form class="converter" id="converter" autocomplete="off">
+          <label for="cvSystem">System
+            <select id="cvSystem">
+              <option value="1,1,1">Sun and planets (1 AU, 1 M☉)</option>
+              <option value="2,0.00256955529,0.00000303">Earth–Moon (384,400 km, 1 M⊕)</option>
+              <option value="3,10,2">Binary star (10 AU, 2 M☉)</option>
+              <option value="4,20626.5,1000">Star-cluster core (0.1 pc, 1000 M☉)</option>
+              <option value="5,0.22431,0.89225">Kepler-16 binary (0.224 AU, 0.89 M☉)</option>
+            </select>
+          </label>
+          <label for="cvL">Length unit L (AU)<input type="number" id="cvL" value="1" step="any" min="0"></label>
+          <label for="cvM">Mass unit M (M☉)<input type="number" id="cvM" value="1" step="any" min="0"></label>
+          <div class="result" id="cvOut">t* = 58.13 days</div>
+        </form>
+      </div>
+    </section>
+
+    <section id="integrals">
+      <div class="label">Conservation</div>
+      <div class="body">
+        <h2>Ten numbers never change</h2>
+        <div class="eq">{{EQ:integrals}}</div>
+        <p>Energy (one number), momentum (three), angular momentum (three) and the steady drift of the centre of mass (three) are fixed by the starting conditions. They shrink the 18-dimensional space of possible states to 8 dimensions.</p>
+        <p>For two bodies that is enough to solve the motion exactly: Kepler's ellipses. For three it is not, and it never will be. Bruns (1887) proved there are no other conserved quantities that are algebraic in positions and velocities. Poincaré (1890) proved there are no further analytic ones. The motion is not confined to any simpler surface that a formula could describe.</p>
+        <p>The instrument rail above tracks two of these live. With the default tolerance the energy should stay within about 10⁻¹¹ of its starting value, even through close encounters.</p>
+      </div>
+    </section>
+
+    <section id="solving">
+      <div class="label">Solving it</div>
+      <div class="body">
+        <h2>What "solving the three-body problem" can mean</h2>
+        <p>There is no general closed-form solution. That is a theorem, not a gap in current knowledge. Three kinds of answer exist instead.</p>
+        <h3>1. A series that converges and is useless</h3>
+        <p>Karl Sundman (1912) proved that the positions can be written as power series that converge for all time whenever the angular momentum is not zero. He did it by regularizing collisions and mapping all of time into a disk:</p>
+        <div class="eq">{{EQ:sundman}}</div>
+        <p>It is a true solution in the mathematical sense. In practice the series converges so slowly that Beloriszky (1930) estimated about 10<sup>8,000,000</sup> terms would be needed for ordinary astronomical accuracy.</p>
+        <h3>2. Exact special solutions</h3>
+        <p>Euler (1767) and Lagrange (1772) found families where the bodies keep the same shape forever. Both work for any three masses, and the simulator rebuilds them for whatever masses you set. Lagrange's equilateral triangle rotates at</p>
+        <div class="eq">{{EQ:lagomega}}</div>
+        <p>It is stable only when one mass dominates, by Routh's criterion (1875):</p>
+        <div class="eq">{{EQ:routh}}</div>
+        <p>Equal masses fail it, so the equal-mass triangle eventually breaks apart. Rounding errors of 10⁻¹⁶ grow exponentially until they matter. Euler's collinear solution places the bodies on a rotating line, with spacing ratio λ fixed by the single positive root of Euler's quintic:</p>
+        <div class="eq">{{EQ:quintic}}</div>
+        <p>Since 2013 thousands of further periodic orbits have been found by computer search. The figure-eight, butterflies, moths and yin-yangs in the System menu are among them. Each one here was refined with Newton's method, which tightens the published starting values from about 10⁻³ closure to about 10⁻¹².</p>
+        <h3>3. Numerical integration with controlled error</h3>
+        <p>This is how the problem is solved in practice, and what this page does. For any starting conditions and any finite span of time, the solver produces the motion to a chosen accuracy. The limit is chaos. A tiny difference δ₀ grows exponentially:</p>
+        <div class="eq">{{EQ:lyap}}</div>
+        <p>Double-precision numbers start at δ₀ ≈ 10⁻¹⁶. A system with Lyapunov exponent λ = 1 therefore loses all predictability after roughly 35 time units, no matter how good the solver is. Switch on the <strong>Butterfly twin</strong> in the simulator: it runs a second copy displaced by δ and measures λ for whatever system you load.</p>
+      </div>
+    </section>
+
+    <section id="solver">
+      <div class="label">The solver</div>
+      <div class="body">
+        <h2>Regularized Bulirsch–Stoer</h2>
+        <p>The equations blow up when two bodies meet: the 1/r³ term goes to infinity. An ordinary solver takes smaller and smaller steps there and either stalls or fails. This page integrates in a fictitious time s instead, chosen so that close encounters are stretched out:</p>
+        <div class="eq">{{EQ:logh}}</div>
+        <p>A leapfrog split of these equations reproduces any two-body Kepler orbit exactly, even straight through a collision (Mikkola &amp; Tanikawa 1999; Preto &amp; Tremaine 1999). Bulirsch–Stoer extrapolation then runs the leapfrog with 2, 4, 6, … substeps and extrapolates to zero step size. That gives roughly tenth-order accuracy plus an error estimate, which sets the step size automatically. The same algorithm runs here in JavaScript and in the repository's Python package. Everything below is checked by its test suite:</p>
+        <ul class="check">
+          <li>Burrau's Pythagorean problem (masses 3, 4, 5 released from rest) ends with mass 3 ejected at t ≈ 60 and masses 4 and 5 in a binary with eccentricity 0.99, as Szebehely and Peters found in 1967. Energy is conserved to 10⁻¹¹ through a close approach of 0.0006.</li>
+          <li>Agrees with SciPy's 8th-order DOP853 integrator to 10⁻⁵ after 15 time units of chaotic motion.</li>
+          <li>The figure-eight closes to 3 × 10⁻⁸ after one period. That limit comes from its 8-digit published starting values, not from the solver.</li>
+          <li>Lagrange triangles stay equilateral to 10⁻⁸, and Euler lines stay collinear, for unequal masses.</li>
+          <li>A head-on collision passes through cleanly, with energy error below 10⁻⁸.</li>
+        </ul>
+        <div class="facts">
+          <div class="fact"><div class="n">3–7 ms</div><div class="d">to run Burrau's problem to its ending (V8 JavaScript engine, one core)</div></div>
+          <div class="fact"><div class="n">27 steps</div><div class="d">for one figure-eight period at tolerance 10⁻¹²</div></div>
+          <div class="fact"><div class="n">10⁻¹³</div><div class="d">typical energy error per period on smooth orbits</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="fate">
+      <div class="label">Fate map</div>
+      <div class="body">
+        <h2>Who gets thrown out, and when?</h2>
+        <p>Release three equal masses from rest. Bodies 1 and 2 start at (−½, 0) and (½, 0); body 3 starts at the point you pick. Almost every such system ends the same way: two bodies pair up and the third is flung away. Which one goes, and when, depends on the starting point in a way no formula can capture.</p>
+        <p>Each of the <span id="fateCount">96,000</span> pixels below is a full integration with the same solver, run until a body escapes or t = 200. Brightness shows how soon a body escapes; switch the view to see which one. <strong>Click any pixel to run that system in the simulator.</strong> It will play out exactly as computed here.</p>
+        <div class="seg fate-seg" role="group" aria-label="Colour the map by">
+          <button type="button" id="fateWhen" aria-pressed="true">How soon</button>
+          <button type="button" id="fateWho" aria-pressed="false">Who escapes</button>
+        </div>
+        <div class="fatemap" id="fatemap">
+          <canvas id="fateCanvas" aria-label="Fate map: colour shows which body escapes for each starting position of body 3"></canvas>
+          <canvas id="fateOverlay" class="overlay" aria-hidden="true"></canvas>
+        </div>
+        <div class="fate-legend" id="fateLegend"></div>
+        <p class="eq-note" style="margin-top: 12px">Smooth regions are predictable: nearby starts share a fate. Speckled regions are chaotic: neighbouring pixels 0.005 apart end differently. There, the precise colour of a single pixel is beyond what any finite-precision calculation can promise, but the structure is robust.</p>
+      </div>
+    </section>
+
+    <section id="refs">
+      <div class="label">Sources</div>
+      <div class="body refs">
+        <ol>
+          <li>Newton, <em>Principia</em> (1687), Book I, Section XI.</li>
+          <li>Euler, De motu rectilineo trium corporum (1767). Lagrange, Essai sur le problème des trois corps (1772).</li>
+          <li>Routh, On Laplace's three particles (1875), Proc. London Math. Soc.</li>
+          <li>Bruns, Über die Integrale des Vielkörper-Problems (1887), Acta Math. 11. Poincaré, Sur le problème des trois corps (1890), Acta Math. 13.</li>
+          <li>Burrau (1913), Astron. Nachr. 195. Szebehely &amp; Peters, Complete solution of a general problem of three bodies (1967), AJ 72.</li>
+          <li>Sundman, Mémoire sur le problème des trois corps (1912), Acta Math. 36.</li>
+          <li>Moore, Braids in classical gravity (1993), PRL 70. Chenciner &amp; Montgomery, A remarkable periodic solution of the three-body problem (2000), Annals of Math. 152.</li>
+          <li>Montgomery, The N-body problem, the braid group, and action-minimizing periodic solutions (1998), Nonlinearity 11.</li>
+          <li>Šuvakov &amp; Dmitrašinović, Three classes of Newtonian three-body planar periodic orbits (2013), PRL 110.</li>
+          <li>Mikkola &amp; Tanikawa, Algorithmic regularization of the few-body problem (1999), MNRAS 310. Preto &amp; Tremaine (1999), AJ 118.</li>
+          <li>Doyle et al., Kepler-16: a transiting circumbinary planet (2011), Science 333.</li>
+          <li>Anosova, Agekyan: the free-fall three-body problem (1967–1986). Stone &amp; Leigh, A statistical solution to the chaotic, non-hierarchical three-body problem (2019), Nature 576.</li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer>Built from the <span class="mono">three-body/</span> folder: a Python package with tests, the browser solver, and the fate-map builder. All units G = 1 unless a system says otherwise.</footer>
+</div>
+<div class="tooltip" id="tooltip" hidden></div>
+
+<script>
+/*__SOLVER__*/
+</script>
+<script>
+const ORBITS = /*__ORBITS__*/null;
+const FATE = /*__FATE__*/null;
+</script>
+<script>
+/*__APP__*/
+</script>

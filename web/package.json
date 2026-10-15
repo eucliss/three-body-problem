@@ -1,0 +1,12 @@
+{
+  "name": "three-body-observatory",
+  "private": true,
+  "description": "Browser solver, fate-map builder and page build for the three-body observatory",
+  "scripts": {
+    "fatemap": "node build_fatemap.js 400 240 200",
+    "build": "node build.js"
+  },
+  "devDependencies": {
+    "mathjax-full": "3.2.2"
+  }
+}
