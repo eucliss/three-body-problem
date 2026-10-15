@@ -6,6 +6,23 @@
   "use strict";
 
   const SEQ = [2, 4, 6, 8, 10, 12, 14, 16];
+
+  /* x^(1/n) from multiplications and comparisons only. The built-in power function is not
+     correctly rounded and differs between JavaScript engines; using only IEEE-754 exact
+     operations (+ - * / sqrt) everywhere in the integration makes every engine take
+     bit-identical steps, so a fate-map pixel computed in Node replays exactly in any browser. */
+  function nthRoot(x, n) {
+    if (!(x > 0)) return 0;
+    x = Math.min(x, 1e12);
+    let lo = 0, hi = x > 1 ? 1e4 : 1;
+    for (let i = 0; i < 64; i++) {
+      const mid = 0.5 * (lo + hi);
+      let q = 1;
+      for (let j = 0; j < n; j++) q *= mid;
+      if (q > x) hi = mid; else lo = mid;
+    }
+    return 0.5 * (lo + hi);
+  }
   const KMAX = SEQ.length;
   const K_TARGET = 4;
 
@@ -15,7 +32,8 @@
       this.N = m.length;
       this.m = Float64Array.from(m);
       this.G = opts.G ?? 1;
-      this.eps2 = (opts.eps ?? 0) ** 2;
+      const eps = opts.eps ?? 0;
+      this.eps2 = eps * eps;
       this.tol = opts.tol ?? 1e-11;
       this.t = opts.t ?? 0;
       const n3 = 3 * this.N;
@@ -180,9 +198,9 @@
     static nextH(H, k, err, ok) {
       if (!ok) {
         if (!isFinite(err)) return H * 0.1;
-        return H * Math.min(0.5, Math.max(0.1, 0.94 * Math.pow(0.65 / err, 1 / (2 * k + 1))));
+        return H * Math.min(0.5, Math.max(0.1, 0.94 * nthRoot(0.65 / err, 2 * k + 1)));
       }
-      let fac = 0.94 * Math.pow(0.65 / Math.max(err, 1e-30), 1 / (2 * k + 1));
+      let fac = 0.94 * nthRoot(0.65 / Math.max(err, 1e-30), 2 * k + 1);
       if (k < K_TARGET) fac *= 1.5;
       else if (k > K_TARGET) fac *= 0.7;
       return H * Math.min(4, Math.max(0.2, fac));
@@ -303,7 +321,7 @@
       R[c] = x[3 * k + c] - (m[i] * x[3 * i + c] + m[j] * x[3 * j + c]) / mb;
       V[c] = v[3 * k + c] - (m[i] * v[3 * i + c] + m[j] * v[3 * j + c]) / mb;
     }
-    const Rn = Math.hypot(R[0], R[1], R[2]);
+    const Rn = Math.sqrt(R[0] * R[0] + R[1] * R[1] + R[2] * R[2]);
     const Ek = 0.5 * (V[0] * V[0] + V[1] * V[1] + V[2] * V[2]) - (G * (mb + m[k])) / Rn;
     const rv = R[0] * V[0] + R[1] * V[1] + R[2] * V[2];
     const out = { pair: [i, j], third: k, a: el.a, e: el.e, inc: el.inc, R: Rn, Ek };
