@@ -110,7 +110,7 @@ At the instant of a very close pericentre, T and U are both huge, so even an exa
 - **Butterfly twin**: a second copy displaced by δ, with its separation measured exactly at the same instants and a fitted Lyapunov exponent.
 - **Instruments**: energy and angular-momentum drift, nearest-neighbour distances, Montgomery's shape sphere, outcome classification (escape, hierarchical, interplay) and an exact return check for periodic orbits.
 - **Editing**: pause, then drag a body or its velocity arrow, or edit the table of initial conditions. Mass sliders rebuild the Lagrange and Euler solutions for the new masses.
-- **Fate map**: 96,000 free-fall integrations (400 × 240), coloured by escape time or by escaper. Clicking a pixel replays that exact integration. Pixels whose run hit the step limit or ended with an energy error above 10⁻⁶ are marked unresolved instead of guessed. The two halves are mirror images computed independently: they agree on the escaper for 99.9% of pixels in smooth regions and 64% in chaotic ones, which shows rounding in the 16th digit deciding outcomes.
+- **Fate map**: 96,000 free-fall integrations (400 × 240), coloured by escape time or by escaper. Clicking a pixel replays that exact integration. Pixels whose run hit the step limit or ended with an energy error above 10⁻⁶ are marked unresolved instead of guessed. The two halves are mirror images computed independently: they agree on the escaper for 99.9% of pixels in smooth regions and 71% in chaotic ones, which shows rounding in the 16th digit deciding outcomes. 157 pixels (0.16%) are unresolved.
 
 ## Running it
 
