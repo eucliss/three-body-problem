@@ -31,6 +31,7 @@ html { background: var(--void); }
 body { background: var(--void); color: var(--ink); font-family: var(--f-body); font-size: var(--step-0); line-height: 1.55; -webkit-font-smoothing: antialiased; }
 .wrap { max-width: 1480px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 56px; }
 a { color: var(--accent); text-underline-offset: 3px; }
+[hidden] { display: none !important; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
 
@@ -134,7 +135,7 @@ details.ics summary:hover { color: var(--ink); }
 .sphere-wrap canvas { width: 132px; height: 132px; background: transparent; border: 0; }
 .sphere-key { font-size: 0.75rem; color: var(--muted); display: grid; gap: 4px; }
 .sphere-key span { display: flex; gap: 7px; align-items: center; }
-.tooltip { position: fixed; z-index: 20; pointer-events: none; background: rgba(11, 16, 32, 0.95); border: 1px solid var(--line-strong); color: var(--ink); font: 400 0.75rem var(--f-mono); padding: 6px 9px; border-radius: 7px; white-space: nowrap; transform: translate(12px, -50%); }
+.tooltip { position: fixed; z-index: 20; pointer-events: none; background: rgba(11, 16, 32, 0.95); border: 1px solid var(--line-strong); color: var(--ink); font: 400 0.75rem var(--f-mono); padding: 6px 9px; border-radius: 7px; white-space: nowrap; transform: translateY(-50%); }
 .tooltip .k { color: var(--muted); }
 
 /* essay */
@@ -262,8 +263,8 @@ footer { max-width: 1100px; margin: 72px auto 0; padding-top: 18px; border-top: 
             <select id="tol">
               <option value="1e-8">1e-8 (fast)</option>
               <option value="1e-10">1e-10</option>
-              <option value="1e-11" selected>1e-11</option>
-              <option value="1e-12">1e-12</option>
+              <option value="1e-11">1e-11</option>
+              <option value="1e-12" selected>1e-12</option>
               <option value="1e-13">1e-13 (strict)</option>
             </select>
           </label>
@@ -337,7 +338,7 @@ footer { max-width: 1100px; margin: 72px auto 0; padding-top: 18px; border-top: 
           <div class="sphere-wrap">
             <canvas id="sphere" width="132" height="132" aria-label="Shape sphere: the triangle's shape as a point on a sphere"></canvas>
             <div class="sphere-key">
-              <span><span class="dot" style="background: var(--accent)"></span>poles: Lagrange triangles</span>
+              <span><span class="dot" style="background: var(--accent)"></span>Lagrange triangles (poles only for equal masses)</span>
               <span><span class="dot" style="background: var(--muted)"></span>equator: collinear, Euler points</span>
               <span><span class="dot" style="background: var(--crit)"></span>×: binary collisions</span>
               <span id="periodRead" class="mono" style="color: var(--ink)"></span>
@@ -372,7 +373,7 @@ footer { max-width: 1100px; margin: 72px auto 0; padding-top: 18px; border-top: 
           <label for="cvSystem">System
             <select id="cvSystem">
               <option value="1,1,1">Sun and planets (1 AU, 1 M☉)</option>
-              <option value="2,0.00256955529,0.00000303">Earth–Moon (384,400 km, 1 M⊕)</option>
+              <option value="2,0.00256955529,0.0000030034">Earth–Moon (384,400 km, 1 M⊕)</option>
               <option value="3,10,2">Binary star (10 AU, 2 M☉)</option>
               <option value="4,20626.5,1000">Star-cluster core (0.1 pc, 1000 M☉)</option>
               <option value="5,0.22431,0.89225">Kepler-16 binary (0.224 AU, 0.89 M☉)</option>
@@ -392,7 +393,7 @@ footer { max-width: 1100px; margin: 72px auto 0; padding-top: 18px; border-top: 
         <div class="eq">{{EQ:integrals}}</div>
         <p>Energy (one number), momentum (three), angular momentum (three) and the steady drift of the centre of mass (three) are fixed by the starting conditions. They shrink the 18-dimensional space of possible states to 8 dimensions.</p>
         <p>For two bodies that is enough to solve the motion exactly: Kepler's ellipses. For three it is not, and it never will be. Bruns (1887) proved there are no other conserved quantities that are algebraic in positions and velocities. Poincaré (1890) proved there are no further analytic ones. The motion is not confined to any simpler surface that a formula could describe.</p>
-        <p>The instrument rail above tracks two of these live. With the default tolerance the energy should stay within about 10⁻¹¹ of its starting value, even through close encounters.</p>
+        <p>The instrument rail above tracks two of these live. At the default tolerance (10⁻¹²) the energy of Burrau's problem stays within a few parts in 10¹¹ of its starting value and ends there after the ejection. During the tightest encounters the reading can jump to 10⁻⁸ for a step or two. At a close pericentre the kinetic and potential energies are both enormous, so their difference is only known to about U × tolerance; the reading settles back once the pair separates. If the error stays above 10⁻⁶, the status line says so.</p>
       </div>
     </section>
 
@@ -412,7 +413,7 @@ footer { max-width: 1100px; margin: 72px auto 0; padding-top: 18px; border-top: 
         <div class="eq">{{EQ:routh}}</div>
         <p>Equal masses fail it, so the equal-mass triangle eventually breaks apart. Rounding errors of 10⁻¹⁶ grow exponentially until they matter. Euler's collinear solution places the bodies on a rotating line, with spacing ratio λ fixed by the single positive root of Euler's quintic:</p>
         <div class="eq">{{EQ:quintic}}</div>
-        <p>Since 2013 thousands of further periodic orbits have been found by computer search. The figure-eight, butterflies, moths and yin-yangs in the System menu are among them. Each one here was refined with Newton's method, which tightens the published starting values from about 10⁻³ closure to about 10⁻¹².</p>
+        <p>Since 2013 computer searches have found thousands of further periodic orbits; the butterflies, moths and yin-yangs in the System menu (Šuvakov &amp; Dmitrašinović 2013) are among them. The figure-eight is older: Moore found it numerically in 1993 and Chenciner and Montgomery proved it exists in 2000. Every periodic orbit in the menu, the figure-eight included, was refined here with Newton's method, which tightens the published starting values from about 10⁻³ closure to about 10⁻¹².</p>
         <h3>3. Numerical integration with controlled error</h3>
         <p>This is how the problem is solved in practice, and what this page does. For any starting conditions and any finite span of time, the solver produces the motion to a chosen accuracy. The limit is chaos. A tiny difference δ₀ grows exponentially:</p>
         <div class="eq">{{EQ:lyap}}</div>
@@ -426,18 +427,20 @@ footer { max-width: 1100px; margin: 72px auto 0; padding-top: 18px; border-top: 
         <h2>Regularized Bulirsch–Stoer</h2>
         <p>The equations blow up when two bodies meet: the 1/r³ term goes to infinity. An ordinary solver takes smaller and smaller steps there and either stalls or fails. This page integrates in a fictitious time s instead, chosen so that close encounters are stretched out:</p>
         <div class="eq">{{EQ:logh}}</div>
-        <p>A leapfrog split of these equations reproduces any two-body Kepler orbit exactly, even straight through a collision (Mikkola &amp; Tanikawa 1999; Preto &amp; Tremaine 1999). Bulirsch–Stoer extrapolation then runs the leapfrog with 2, 4, 6, … substeps and extrapolates to zero step size. That gives roughly tenth-order accuracy plus an error estimate, which sets the step size automatically. The same algorithm runs here in JavaScript and in the repository's Python package. Everything below is checked by its test suite:</p>
+        <p>A leapfrog split of these equations keeps any two-body orbit exactly on its Kepler ellipse, even straight through a collision (Mikkola &amp; Tanikawa 1999; Preto &amp; Tremaine 1999). Bulirsch–Stoer extrapolation then runs the leapfrog with 2, 4, 6, … substeps and extrapolates to zero step size. That gives roughly tenth-order accuracy plus an error estimate, which sets the step size automatically.</p>
+        <p>Two details matter for getting the right answer. First, the solver integrates the three sides of the triangle from the <a href="#equation">triangle form</a> above, not absolute positions. Positions near x = 0.5 carry about 16 digits, so a pair 10⁻⁹ apart would have its separation known to only 7; each side as its own variable keeps a tight pair at full precision wherever it is. Second, every operation on the integration path is one that IEEE-754 requires to be correctly rounded (+ − × ÷ √), so every browser engine takes bit-identical steps. That is what lets a fate-map pixel computed offline replay exactly here.</p>
+        <p>The same algorithm runs here in JavaScript and in the repository's Python package. Everything below is checked by its test suite, at tolerance 10⁻¹²:</p>
         <ul class="check">
-          <li>Burrau's Pythagorean problem (masses 3, 4, 5 released from rest) ends with mass 3 ejected at t ≈ 60 and masses 4 and 5 in a binary with eccentricity 0.99, as Szebehely and Peters found in 1967. Energy is conserved to 10⁻¹¹ through a close approach of 0.0006.</li>
-          <li>Agrees with SciPy's 8th-order DOP853 integrator to 10⁻⁵ after 15 time units of chaotic motion.</li>
-          <li>The figure-eight closes to 3 × 10⁻⁸ after one period. That limit comes from its 8-digit published starting values, not from the solver.</li>
-          <li>Lagrange triangles stay equilateral to 10⁻⁸, and Euler lines stay collinear, for unequal masses.</li>
-          <li>A head-on collision passes through cleanly, with energy error below 10⁻⁸.</li>
+          <li>Burrau's Pythagorean problem (masses 3, 4, 5 released from rest) ends with mass 3 ejected at t ≈ 60 and masses 4 and 5 in a binary with eccentricity 0.99, as Szebehely and Peters found in 1967. Energy is conserved to 3 × 10⁻¹¹ at t = 80, after a closest approach of 0.0004.</li>
+          <li>Agrees with SciPy's 8th-order DOP853 integrator to 2 × 10⁻¹⁰ after 15 time units of chaotic motion.</li>
+          <li>From its 8-digit published starting values the figure-eight closes to 3 × 10⁻⁸ after one period, the limit of those digits. From the refined values it closes to 7 × 10⁻¹³.</li>
+          <li>Lagrange triangles stay equilateral to 3 × 10⁻¹³, and Euler lines stay collinear, for unequal masses.</li>
+          <li>A head-on collision passes through in 39 steps with energy error 6 × 10⁻¹⁰, and gives the same result when the whole system is shifted away from the origin.</li>
         </ul>
         <div class="facts">
-          <div class="fact"><div class="n">3–7 ms</div><div class="d">to run Burrau's problem to its ending (V8 JavaScript engine, one core)</div></div>
-          <div class="fact"><div class="n">27 steps</div><div class="d">for one figure-eight period at tolerance 10⁻¹²</div></div>
-          <div class="fact"><div class="n">10⁻¹³</div><div class="d">typical energy error per period on smooth orbits</div></div>
+          <div class="fact"><div class="n">5–15 ms</div><div class="d">to run Burrau's problem to its ending (V8 JavaScript engine, one core)</div></div>
+          <div class="fact"><div class="n">29 steps</div><div class="d">for one figure-eight period at tolerance 10⁻¹²</div></div>
+          <div class="fact"><div class="n">3 × 10⁻¹³</div><div class="d">energy error after one figure-eight period</div></div>
         </div>
       </div>
     </section>
@@ -457,7 +460,8 @@ footer { max-width: 1100px; margin: 72px auto 0; padding-top: 18px; border-top: 
           <canvas id="fateOverlay" class="overlay" aria-hidden="true"></canvas>
         </div>
         <div class="fate-legend" id="fateLegend"></div>
-        <p style="margin-top: 14px">The map holds a built-in experiment. Its left and right halves are mirror images, so in exact arithmetic they would match pixel for pixel. Both halves were integrated independently, and their floating-point rounding differs in the 16th digit. In the smooth bands, where neighbouring starts share a fate, the halves agree on the escaping body for <strong>99.9%</strong> of pixels. In the speckled regions they agree on only <strong>64%</strong>. There, a difference of one part in 10<sup>16</sup> decides which star is thrown out.</p>
+        <p style="margin-top: 14px">The map holds a built-in experiment. Its left and right halves are mirror images, so in exact arithmetic they would match pixel for pixel. Both halves were integrated independently, and their floating-point rounding differs in the 16th digit. In the smooth bands, where neighbouring starts share a fate, the halves agree on the escaping body for <strong>99.9%</strong> of pixels. In the speckled regions they agree on only <strong>71%</strong>. There, a difference of one part in 10<sup>16</sup> decides which star is thrown out.</p>
+        <p class="eq-note">Pixels in plum (157 of them, 0.16%) are marked unresolved: their run hit the step limit, or ended with an energy error above 10⁻⁶. They are left uncoloured rather than guessed.</p>
       </div>
     </section>
 

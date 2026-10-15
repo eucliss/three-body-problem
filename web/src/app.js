@@ -17,8 +17,8 @@
   }
   function sci(x) {
     if (!isFinite(x) || x <= 0) return x === 0 ? "0" : "–";
-    const e = Math.floor(Math.log10(x));
-    const m = x / Math.pow(10, e);
+    let e = Math.floor(Math.log10(x)), m = x / Math.pow(10, e);
+    if (+m.toFixed(1) >= 10) { m /= 10; e += 1; } // 9.97e-8 prints as 1.0e-7, not 10.0e-8
     return `${m.toFixed(1)}e${e}`;
   }
   function mulberry32(a) {
@@ -127,12 +127,19 @@
       source: "Šuvakov & Dmitrašinović 2013, PRL 110, 114301 (refined)",
     });
   }
-  PRESETS.push({
+  const fig8 = orb("figure_eight_SD");
+  const fig8Blurb = "Three equal masses chase one another around a single figure-eight. It is <b>linearly stable</b>: nudge it and it keeps its shape. Try the butterfly twin and compare with the Pythagorean problem.";
+  PRESETS.push(fig8 ? {
+    id: "figure8", name: "Figure-eight", group: "Periodic orbits", masses: [1, 1, 1], massMode: "keep",
+    make: () => suvakovIC(fig8.p1, fig8.p2), period: fig8.T, speed: 1.4, trail: 6.33, preroll: true,
+    blurb: `${fig8Blurb} Its starting values were refined by Newton shooting so the orbit closes to ${sci(fig8.residual)}.`,
+    source: "Moore 1993; Chenciner & Montgomery 2000 (refined)",
+  } : {
     id: "figure8", name: "Figure-eight", group: "Periodic orbits", masses: [1, 1, 1], massMode: "keep",
     make: () => { const x1 = [-0.97000436, 0.24308753], v3 = [-0.93240737, -0.86473146];
       return toCom([1, 1, 1], [x1[0], x1[1], 0, -x1[0], -x1[1], 0, 0, 0, 0], [-v3[0] / 2, -v3[1] / 2, 0, -v3[0] / 2, -v3[1] / 2, 0, v3[0], v3[1], 0]); },
     period: 6.32591398, speed: 1.4, trail: 6.33, preroll: true,
-    blurb: "Three equal masses chase one another around a single figure-eight. It is <b>linearly stable</b>: nudge it and it keeps its shape. Try the butterfly twin and compare with the Pythagorean problem.",
+    blurb: fig8Blurb,
     source: "Moore 1993; Chenciner & Montgomery 2000",
   });
   PRESETS.push({
@@ -169,7 +176,7 @@
     id: "pythagorean", name: "Pythagorean problem", group: "Astrophysics and chaos", masses: [3, 4, 5], massMode: "keep",
     make: () => toCom([3, 4, 5], [1, 3, 0, -2, -1, 0, 1, -1, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0]),
     speed: 2, trail: 7,
-    blurb: "Masses 3, 4 and 5 start at rest on a 3-4-5 right triangle. After dozens of close encounters (one within 0.0006) the lightest body is ejected around t ≈ 60 and the other two leave as a tight binary.",
+    blurb: "Masses 3, 4 and 5 start at rest on a 3-4-5 right triangle. After dozens of close encounters (one within 0.0004) the lightest body is ejected around t ≈ 60 and the other two leave as a tight binary.",
     source: "Burrau 1913; solved by Szebehely & Peters 1967",
   });
   PRESETS.push({
@@ -190,7 +197,7 @@
       return toCom([1, 0.003, 3e-5], [0, 0, 0, 1, 0, 0, 1 + am, 0, 0], [0, 0, 0, 0, vp, 0, 0, vp + vm, 0]);
     },
     speed: 1, trail: 6.3,
-    blurb: "A hierarchical triple: the moon circles the planet well inside its Hill sphere, so the star barely disturbs it. Seen from the star, the moon's path is a looping epicycle.",
+    blurb: "A hierarchical triple: the moon orbits inside the planet's Hill sphere (at 0.4 r_H), so it stays bound, though the star stretches its orbit noticeably. Seen from the star, the moon's path is a wavy ring that never loops back, because its speed around the planet is far below the planet's speed around the star.",
     source: "Hill stability: r_H = a (m / 3M)^1/3",
   });
   PRESETS.push({
@@ -221,7 +228,7 @@
       return toCom([0.5, 0.5, 1e-5], [...x1, ...x2, 0, 0, 1.1], [...v1, ...v2, 0, 0, 0]);
     },
     speed: 2.5, trail: 30,
-    blurb: "Two equal stars on an eccentric orbit; a light third body bobs up and down through their centre. The bobbing is fully chaotic: one of the simplest systems proven to be chaotic.",
+    blurb: "Two equal stars on an eccentric orbit; a light third body bobs up and down through their centre. This start is chaotic and the light body is eventually flung out along the axis. Small oscillations stay regular, but Moser proved the problem contains orbits with any prescribed sequence of crossings, which makes it one of the simplest systems proven to contain chaos.",
     source: "Sitnikov 1960; Moser 1973",
   });
   PRESETS.push({
@@ -250,11 +257,11 @@
 
   /* ================================================================ state */
   const state = {
-    preset: null, base: null, masses: [1, 1, 1], custom: false, seed: 7, ff: [0.2, 0.6],
+    preset: null, base: null, masses: [1, 1, 1], custom: false, icEdited: false, seed: 7, ff: [0.2, 0.6],
     sim: null, twin: null, playing: !reduceMotion, speed: 1, tDisp: 0, lag: false,
     opts: { trails: true, field: true, twin: false, rotating: false, velocity: false, forces: false, labels: true, autofit: true },
-    tilt: 0, yaw: 0, view3d: false, trailDur: 6, tol: 1e-11, eps: 0, delta: 1e-9,
-    trails: [], twinTrails: [], diag: null, sphere: [], periods: [], status: null, classifyEvery: 0,
+    tilt: 0, yaw: 0, view3d: false, trailDur: 6, tol: 1e-12, eps: 0, delta: 1e-9,
+    trails: [], twinTrails: [], diag: null, sphere: [], lastSphereT: -Infinity, periods: [], brokeAt: null, status: null, classifyEvery: 0,
     disp: new Float64Array(9), dispV: new Float64Array(9), twinDisp: new Float64Array(9), theta: 0, omega: 0,
     y0: null, sizeScale: 1, editing: null,
   };
@@ -285,12 +292,13 @@
     const p = PRESETS.find((q) => q.id === id) || PRESETS[0];
     state.preset = p;
     state.custom = false;
+    state.icEdited = false;
     if (!keepMasses) state.masses = p.masses ? p.masses.slice() : null;
     let ic = p.massMode === "regen" ? p.make(state.masses) : p.make();
     if (!state.masses) state.masses = ic.m.slice();
     if (p.massMode === "keep" && keepMasses && state.masses) ic = toCom(state.masses.slice(), ic.x.slice(), ic.v.slice());
     state.base = { m: ic.m.slice(), x: ic.x.slice(), v: ic.v.slice(), lambda: ic.lambda, period: ic.period };
-    if (p.tol) setTol(p.tol);
+    setTol(p.tol || state.userTol || 1e-12); // a preset's own tolerance, else the reader's choice, else the default
     state.speed = p.speed;
     state.trailDur = p.trail;
     setView3d(!!p.tilt, p.tilt || 0);
@@ -301,6 +309,7 @@
     renderPresetInfo();
     buildMassRows();
     buildICTable();
+    syncPlay();
   }
 
   function setTol(t) { state.tol = t; $("tol").value = String(t); }
@@ -314,7 +323,9 @@
     state.twinTrails = [0, 1, 2].map(() => new Trail(6000));
     state.diag = newDiag();
     state.sphere = [];
+    state.lastSphereT = -Infinity;
     state.periods = [];
+    state.brokeAt = null;
     state.tDisp = 0;
     state.collision = null;
     state.status = null;
@@ -331,7 +342,7 @@
     computeSphereLandmarks();
     const p = state.preset;
     state.period = state.custom ? null : p.massMode === "regen" ? b.period || null : p.period && sameMasses(p.masses) ? p.period : null;
-    state.vRef = null; state.aRef = null; state.Lstart = undefined; state.lastZ = undefined; state.crossings = 0;
+    state.vRef = null; state.aRef = null; state.Lstart = undefined; state.lastZ = undefined; state.crossings = 0; state.dEwin = [];
     if (p.preroll && state.period && !state.custom) { advanceTo(state.period * 1.0001, Infinity); state.tDisp = state.sim.t; }
     sampleDisplay();
     pushDiag(true);
@@ -393,6 +404,11 @@
 
   function afterMainStep() {
     const sim = state.sim, d = state.diag;
+    // energy error over the last 32 step ends; a real loss of accuracy persists, while a reading
+    // taken at a very close pericentre (T and U both huge, E known only to ~U*tol) does not
+    const win = state.dEwin;
+    win.push(sim.relEnergyError());
+    if (win.length > 32) win.shift();
     // energy error at exact step ends (interpolated states would add ~1e-4 noise)
     if (sim.t - d.lastT >= Math.max(1e-3, state.speed / 40) || d.E.t.length < 2) {
       d.lastT = sim.t;
@@ -426,15 +442,16 @@
         if (!S.t.length || sim.t - S.t[S.t.length - 1] >= Math.max(1e-3, state.speed / 40)) {
           S.push(sim.t, [Math.log10(Math.max(sep, 1e-17))]);
           const L = d.lyap, R = state.sizeScale;
-          if (sep > 10 * state.delta && sep < 1e-2 * R && sim.t > 0) {
+          const hi = 2e-2 * R, lo = Math.min(10 * state.delta, hi / 10);
+          if (sep > lo && sep < hi && sim.t > 0) {
             const y = Math.log(sep); L.n++; L.st += sim.t; L.sy += y; L.stt += sim.t * sim.t; L.sty += sim.t * y;
           }
           if (L.horizon === null && sep > 0.1 * R) L.horizon = sim.t;
         }
       } catch (e) { state.twin = null; }
     }
-    // periodic orbit: exact return check at multiples of the period
-    if (state.period) {
+    // periodic orbit: exact return check at multiples of the period, until the first failed return
+    if (state.period && state.brokeAt === null) {
       const k = Math.floor(sim.t / state.period + 1e-9);
       const kPrev = Math.floor(sim.prev[18] / state.period + 1e-9);
       if (k > kPrev && k >= 1 && k <= 999) {
@@ -443,6 +460,7 @@
         let err = 0;
         for (let i = 0; i < 18; i++) err = Math.max(err, Math.abs(buf[i] - state.y0[i]));
         state.periods.push({ k, err });
+        if (err >= 1e-3) state.brokeAt = k - 1;
       }
     }
   }
@@ -463,6 +481,8 @@
   }
 
   function pushDiag() {
+    if (!(state.tDisp > state.lastSphereT)) return; // only when the displayed time moved on
+    state.lastSphereT = state.tDisp;
     const s = shapeSphere(state.disp, state.base.m);
     state.sphere.push(s);
     if (state.sphere.length > 2500) state.sphere.splice(0, state.sphere.length - 2500);
@@ -495,6 +515,7 @@
   }
 
   function updateCamera(dtReal) {
+    if (state.editing !== null) return; // hold the view still so the dragged star stays under the pointer
     if (!state.opts.autofit || state.manualZoom) return;
     const x = state.disp, m = state.base.m;
     const th = state.theta, c = Math.cos(th), s = Math.sin(th);
@@ -646,8 +667,8 @@ void main(){
       }
       // connect to the live position
       if (prev) {
-        const q = dashed ? state.twinDisp : state.disp;
-        const c = Math.cos(state.theta), s = Math.sin(state.theta);
+        const q = dashed ? state.twinDisp : state.disp, th = dashed ? frameAngle(state.twinDisp) : state.theta;
+        const c = Math.cos(th), s = Math.sin(th);
         const d = toDisplay(q[3 * i], q[3 * i + 1], q[3 * i + 2], c, s), p = project(d[0], d[1], d[2]);
         paths[B - 1].moveTo(prev[0], prev[1]); paths[B - 1].lineTo(p[0], p[1]);
       }
@@ -708,6 +729,8 @@ void main(){
   function velScale() { // px per velocity unit, so a typical speed draws ~55 px
     let vmax = 1e-9;
     for (let i = 0; i < 3; i++) vmax = Math.max(vmax, Math.hypot(state.dispV[3 * i], state.dispV[3 * i + 1], state.dispV[3 * i + 2]));
+    const m = state.base.m;
+    vmax = Math.max(vmax, 0.2 * Math.sqrt((m[0] + m[1] + m[2]) / state.sizeScale)); // a system at rest still gets a usable scale
     if (!state.vRef || state.editing === null) state.vRef = state.vRef ? Math.max(vmax, state.vRef * 0.98) : vmax;
     return 55 / state.vRef;
   }
@@ -738,9 +761,9 @@ void main(){
     const order = [0, 1, 2].map((i) => ({ i, p: project(P[i][0], P[i][1], P[i][2]) })).sort((a, b) => a.p[3] - b.p[3]);
     // twin ghosts
     if (state.twin) {
-      const tx = state.twinDisp;
+      const tx = state.twinDisp, tth = frameAngle(tx), tc = Math.cos(tth), ts = Math.sin(tth); // the twin's own co-rotating frame
       for (let i = 0; i < 3; i++) {
-        const q = toDisplay(tx[3 * i], tx[3 * i + 1], tx[3 * i + 2], c, s), p = project(q[0], q[1], q[2]);
+        const q = toDisplay(tx[3 * i], tx[3 * i + 1], tx[3 * i + 2], tc, ts), p = project(q[0], q[1], q[2]);
         ctx.strokeStyle = rgba(i, 0.85); ctx.lineWidth = 1.3; ctx.setLineDash([2, 2]);
         ctx.beginPath(); ctx.arc(p[0], p[1], bodyRadius(i) * p[2] + 4, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
       }
@@ -852,7 +875,15 @@ void main(){
 
   /* ================================================================ charts */
   const tooltip = $("tooltip");
-  function showTip(evt, html) { tooltip.innerHTML = html; tooltip.hidden = false; tooltip.style.left = evt.clientX + "px"; tooltip.style.top = evt.clientY + "px"; }
+  function showTip(evt, html) {
+    tooltip.innerHTML = html; tooltip.hidden = false; tooltip.style.left = "0px";
+    const w = tooltip.offsetWidth, h = tooltip.offsetHeight, pad = 8;
+    const vw = document.documentElement.clientWidth || window.innerWidth, vh = document.documentElement.clientHeight || window.innerHeight;
+    let left = evt.clientX + 12;
+    if (left + w > vw - pad) left = evt.clientX - 12 - w; // flip to the left of the pointer
+    tooltip.style.left = Math.max(pad, left) + "px";
+    tooltip.style.top = clamp(evt.clientY, pad + h / 2, Math.max(pad + h / 2, vh - pad - h / 2)) + "px";
+  }
   function hideTip() { tooltip.hidden = true; }
 
   class MiniChart {
@@ -949,7 +980,10 @@ void main(){
       order.forEach((q, slot) => { x[3 * q] = e.x[3 * slot]; });
       return shapeSphere(x, m);
     });
-    state.sphereMarks = { coll, eul };
+    // equilateral triangles of both orientations; they sit on the poles only for equal masses
+    const tri = [0, 0, 0, 1, 0, 0, 0.5, Math.sqrt(3) / 2, 0], triMirror = [0, 0, 0, 1, 0, 0, 0.5, -Math.sqrt(3) / 2, 0];
+    const lag = [shapeSphere(tri, m), shapeSphere(triMirror, m)];
+    state.sphereMarks = { coll, eul, lag };
   }
   function drawSphere() {
     const cv = sphereCv, r0 = cv.getBoundingClientRect(), S = Math.max(40, r0.width);
@@ -989,7 +1023,7 @@ void main(){
     }
     // landmarks
     const mk = state.sphereMarks;
-    for (const pole of [[0, 0, 1], [0, 0, -1]]) { const p = P(pole); c.fillStyle = p[2] >= 0 ? "#aab8ff" : "rgba(170,184,255,0.3)"; c.beginPath(); c.arc(p[0], p[1], 3, 0, 2 * Math.PI); c.fill(); }
+    for (const q of mk.lag) { const p = P(q); c.fillStyle = p[2] >= 0 ? "#aab8ff" : "rgba(170,184,255,0.3)"; c.beginPath(); c.arc(p[0], p[1], 3, 0, 2 * Math.PI); c.fill(); }
     for (const e of mk.eul) { const p = P(e); c.fillStyle = p[2] >= 0 ? "#949db5" : "rgba(148,157,181,0.3)"; c.beginPath(); c.arc(p[0], p[1], 2.4, 0, 2 * Math.PI); c.fill(); }
     for (const q of mk.coll) {
       const p = P(q.pt); c.strokeStyle = p[2] >= 0 ? "#ef7468" : "rgba(239,116,104,0.3)"; c.lineWidth = 1.4;
@@ -1023,14 +1057,14 @@ void main(){
     const pill = $("pill"), st = state.status;
     let kind = "interplay", text = "Three-way interplay";
     if (state.collision) { kind = "collision"; text = "Exact collision: singular point"; }
-    else if (state.period && (!state.periods.length || state.periods[state.periods.length - 1].err < 1e-3)) {
+    else if (state.period && state.brokeAt === null) {
       kind = "periodic"; const last = state.periods[state.periods.length - 1];
       text = last ? `Periodic · back within ${sci(last.err)} after ${last.k} ${last.k === 1 ? "period" : "periods"}` : `Periodic orbit · T = ${state.period.toFixed(4)}`;
     } else if (st) {
       if (st.state === "escape") { kind = "escape"; text = `Body ${st.third + 1} escaping · v∞ ${fmt(st.vInf, 2)} · ${st.pair[0] + 1}–${st.pair[1] + 1} binary, e ${fmt(st.e, 2)}`; }
       else if (st.state === "hierarchical") { kind = "hierarchical"; text = `Hierarchical · ${st.pair[0] + 1}–${st.pair[1] + 1} pair (e ${fmt(st.e, 2)}) with ${st.third + 1} orbiting it`; }
       else if (st.state === "unbound") { kind = "escape"; text = "Unbound · all three flying apart"; }
-      if (state.period && state.periods.length) text = `Orbit broke after ${state.periods.length} periods · ` + text.split(" · ")[0];
+      if (state.period && state.brokeAt !== null) text = `Orbit broke after ${state.brokeAt} ${state.brokeAt === 1 ? "period" : "periods"} · ` + text.split(" · ")[0];
     }
     if (p.id === "trojan" && !state.custom && !state.collision) {
       const x = state.disp, a2 = Math.atan2(x[4] - x[1], x[3] - x[0]), a3 = Math.atan2(x[7] - x[1], x[6] - x[0]);
@@ -1041,12 +1075,15 @@ void main(){
       const x = state.disp, m = state.base.m, z = x[8] - (m[0] * x[2] + m[1] * x[5]) / (m[0] + m[1]);
       kind = "interplay"; text = `Body 3 bobbing · z = ${z >= 0 ? "+" : "−"}${Math.abs(z).toFixed(2)} · ${state.crossings} plane crossings`;
     }
+    const relErr = sim.relEnergyError();
+    const floor = state.dEwin.length >= 8 ? Math.min(...state.dEwin) : 0;
+    if (!state.collision && floor > 1e-6) { kind = "collision"; text = `Accuracy lost · |ΔE/E₀| ≥ ${sci(floor)} · results past here are unreliable`; }
     pill.dataset.state = kind; $("pillText").textContent = text;
     $("stateWord").textContent = kind === "periodic" ? "periodic" : st ? st.state : "";
     // readouts
     const E = sim.energy(), L = sim.angularMomentum();
     $("rE").textContent = fmt(E, 6);
-    $("rdE").textContent = sci(sim.relEnergyError());
+    $("rdE").textContent = sci(relErr);
     const Ln = Math.hypot(L[0], L[1], L[2]);
     if (sim.steps === 0 || state.Lstart === undefined || force) state.Lstart = Ln;
     $("rL").textContent = fmt(Ln, 6);
@@ -1064,7 +1101,8 @@ void main(){
       const lam = (Ld.n * Ld.sty - Ld.st * Ld.sy) / (Ld.n * Ld.stt - Ld.st * Ld.st);
       const hz = Ld.horizon !== null ? ` · diverged at t ${Ld.horizon.toFixed(1)}` : "";
       $("lyap").textContent = `λ ≈ ${lam.toFixed(3)}${hz}`;
-    } else $("lyap").textContent = state.opts.twin ? `δ = ${sci(state.delta)} · measuring` : "turn on the twin";
+    } else if (state.opts.twin && Ld.horizon !== null) $("lyap").textContent = "diverged before λ could be fitted; try a smaller δ";
+    else $("lyap").textContent = state.opts.twin ? `δ = ${sci(state.delta)} · measuring` : "turn on the twin";
     $("periodRead").textContent = state.period && state.periods.length ? `return error ${sci(state.periods[state.periods.length - 1].err)}` : "";
   }
 
@@ -1107,10 +1145,12 @@ void main(){
     if (p.massMode === "regen") {
       const ic = p.make(state.masses.slice());
       state.base = { m: ic.m.slice(), x: ic.x.slice(), v: ic.v.slice(), lambda: ic.lambda, period: ic.period };
+      state.custom = false; // the rebuilt exact solution is not an edit
+      state.icEdited = false;
     } else {
       const ic = toCom(state.masses.slice(), state.base.x.slice(), state.base.v.slice());
       state.base = { m: ic.m, x: ic.x, v: ic.v };
-      state.custom = !sameMasses(p.masses);
+      state.custom = state.icEdited || !sameMasses(p.masses);
     }
     restart();
     state.playing = wasPlaying; syncPlay();
@@ -1130,11 +1170,10 @@ void main(){
       h += "</tr>";
     }
     tb.innerHTML = h + "</tbody>";
-    tb.querySelectorAll("input").forEach((inp) => inp.addEventListener("change", () => {
-      const x = [], v = [];
-      for (let i = 0; i < 3; i++) for (let k = 0; k < 3; k++) {
-        x.push(+$(`ic${i}${cols[k]}`).value || 0); v.push(+$(`ic${i}${cols[k + 3]}`).value || 0);
-      }
+    // change only the edited coordinate, keeping the other 17 at full precision
+    for (let i = 0; i < 3; i++) cols.forEach((c, k) => $(`ic${i}${c}`).addEventListener("change", (e) => {
+      const x = state.base.x.slice(), v = state.base.v.slice(), val = +e.target.value || 0;
+      if (k < 3) x[3 * i + k] = val; else v[3 * i + k - 3] = val;
       setCustom(x, v);
     }));
   }
@@ -1143,6 +1182,7 @@ void main(){
     const ic = toCom(state.base.m.slice(), x, v);
     state.base = { m: ic.m, x: ic.x, v: ic.v };
     state.custom = true;
+    state.icEdited = true;
     const wasPlaying = state.playing;
     restart();
     state.playing = wasPlaying; syncPlay();
@@ -1179,6 +1219,7 @@ void main(){
       } else { state.twin = null; state.twinTrails.forEach((t) => t.clear()); }
     }
     if (name === "autofit" && val) state.manualZoom = false;
+    if (name === "rotating") syncPlay();
   }
   document.querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => setOpt(b.dataset.opt, b.getAttribute("aria-pressed") !== "true")));
 
@@ -1188,6 +1229,7 @@ void main(){
     if (!on) state.yaw = 0;
     $("viewPlane").setAttribute("aria-pressed", String(!on));
     $("view3d").setAttribute("aria-pressed", String(on));
+    syncPlay();
   }
   $("viewPlane").addEventListener("click", () => setView3d(false));
   $("view3d").addEventListener("click", () => setView3d(true, state.preset.tilt || 60));
@@ -1196,12 +1238,12 @@ void main(){
     $("playLabel").textContent = state.playing ? "Pause" : "Play";
     $("playIcon").setAttribute("d", state.playing ? "M3 2h3v10H3zM8 2h3v10H8z" : "M3 2l9 5-9 5z");
     $("hint").hidden = state.playing || state.view3d || state.opts.rotating;
-    stage.classList.toggle("editing", !state.playing && !state.view3d);
+    stage.classList.toggle("editing", !state.playing && !state.view3d && !state.opts.rotating);
   }
   $("play").addEventListener("click", () => { state.playing = !state.playing; syncPlay(); });
   $("restart").addEventListener("click", () => { restart(); });
   $("reroll").addEventListener("click", () => { state.seed = (state.seed * 7919 + 13) % 100000; loadPreset("random"); });
-  $("tol").addEventListener("change", () => { state.tol = +$("tol").value; restart(); });
+  $("tol").addEventListener("change", () => { state.tol = state.userTol = +$("tol").value; restart(); });
   $("eps").addEventListener("change", () => { state.eps = +$("eps").value; restart(); });
   $("delta").addEventListener("change", () => { state.delta = +$("delta").value; if (state.opts.twin) { setOpt("twin", false); setOpt("twin", true); } });
 
@@ -1228,9 +1270,10 @@ void main(){
     // edit mode: paused, top view, inertial frame
     if (!state.playing && !state.view3d && !state.opts.rotating) {
       const x = state.disp, P = [0, 1, 2].map((i) => [x[3 * i], x[3 * i + 1], x[3 * i + 2]]), vs = velScale();
-      for (let i = 0; i < 3; i++) {
-        const tip = velocityTip(i, P, vs);
-        if (Math.hypot(sx - tip[0], sy - tip[1]) < 11) { drag = { mode: "vel", i, vs }; state.editing = i; return; }
+      for (let i = 0; i < 3; i++) { // a tip inside the body's grab disc belongs to the body, not the arrow
+        const tip = velocityTip(i, P, vs), p = project(P[i][0], P[i][1], P[i][2]);
+        const clear = Math.hypot(tip[0] - p[0], tip[1] - p[1]) > Math.max(12, bodyRadius(i) + 6);
+        if (clear && Math.hypot(sx - tip[0], sy - tip[1]) < 11) { drag = { mode: "vel", i, vs }; state.editing = i; return; }
       }
       for (let i = 0; i < 3; i++) {
         const p = project(P[i][0], P[i][1], P[i][2]);
@@ -1310,9 +1353,10 @@ void main(){
     cv.width = Wm; cv.height = Hm;
     const bin = atob(FATE.data), data = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) data[i] = bin.charCodeAt(i);
-    const none = [17, 22, 42];
+    const none = [17, 22, 42], unres = [74, 52, 70]; // 255: no escape by tMax; 254: integration did not finish or lost accuracy
     const total = data.length, cnt = FATE.counts;
-    const pct = (n) => `${((100 * n) / total).toFixed(0)}%`;
+    const pct = (n) => { const v = (100 * n) / total; return v > 0 && v < 1 ? (v < 0.1 ? "<0.1%" : `${v.toFixed(1)}%`) : `${v.toFixed(0)}%`; };
+    const unresLegend = cnt.unresolved ? `<span><span class="sw" style="background:rgb(${unres})"></span>unresolved: accuracy lost or step limit (${pct(cnt.unresolved)})</span>` : "";
     $("fateCount").textContent = total.toLocaleString();
     const RAMP = [[236, 240, 253], [120, 138, 233], [22, 27, 58]]; // fast → slow, one hue
     const paint = (mode) => {
@@ -1321,6 +1365,7 @@ void main(){
         const b = data[i];
         let col;
         if (b === 255) col = mode === "when" ? [8, 10, 20] : none;
+        else if (b === 254) col = unres;
         else if (mode === "when") {
           const q = (b & 63) / 63, f = q < 0.5 ? q / 0.5 : (q - 0.5) / 0.5, A = q < 0.5 ? RAMP[0] : RAMP[1], B = q < 0.5 ? RAMP[1] : RAMP[2];
           col = [A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f, A[2] + (B[2] - A[2]) * f];
@@ -1334,9 +1379,9 @@ void main(){
       }
       cv.getContext("2d").putImageData(img, 0, 0);
       $("fateLegend").innerHTML = mode === "when"
-        ? `<span>escape soon<span class="ramp"></span>late (t = ${FATE.tLo} → ${FATE.tMax}, log scale)</span><span><span class="sw" style="background:rgb(8,10,20);box-shadow:inset 0 0 0 1px #2a3657"></span>no escape by t = ${FATE.tMax} (${pct(cnt.none)})</span>`
+        ? `<span>escape soon<span class="ramp"></span>late (t = ${FATE.tLo} → ${FATE.tMax}, log scale)</span><span><span class="sw" style="background:rgb(8,10,20);box-shadow:inset 0 0 0 1px #2a3657"></span>no escape by t = ${FATE.tMax} (${pct(cnt.none)})</span>${unresLegend}`
         : [0, 1, 2].map((i) => `<span><span class="sw" style="background:${GLOW[i]}"></span>body ${i + 1} escapes (${pct(cnt["body" + (i + 1)])})</span>`).join("") +
-          `<span>bright = soon, dim = late</span><span><span class="sw" style="background:rgb(${none})"></span>no escape by t = ${FATE.tMax} (${pct(cnt.none)})</span>`;
+          `<span>bright = soon, dim = late</span><span><span class="sw" style="background:rgb(${none})"></span>no escape by t = ${FATE.tMax} (${pct(cnt.none)})</span>${unresLegend}`;
       $("fateWhen").setAttribute("aria-pressed", String(mode === "when"));
       $("fateWho").setAttribute("aria-pressed", String(mode === "who"));
     };
@@ -1345,7 +1390,7 @@ void main(){
     $("fateWho").addEventListener("click", () => paint("who"));
     const toWorld = (c, r) => [FATE.xMin + ((FATE.xMax - FATE.xMin) * (c + 0.5)) / Wm, FATE.yMax * (1 - (r + 0.5) / Hm)];
     const drawOverlay = () => {
-      const rr = cv.getBoundingClientRect(), w = rr.width, h = rr.height;
+      const w = cv.clientWidth, h = cv.clientHeight; // content box: the canvas has a 1 px border
       ov.width = Math.round(w * DPR); ov.height = Math.round(h * DPR);
       const c = ov.getContext("2d"); c.setTransform(DPR, 0, 0, DPR, 0, 0); c.clearRect(0, 0, w, h);
       const X = (x) => ((x - FATE.xMin) / (FATE.xMax - FATE.xMin)) * w, Y = (y) => (1 - (y - FATE.yMin) / (FATE.yMax - FATE.yMin)) * h;
@@ -1367,14 +1412,15 @@ void main(){
     drawOverlay();
     window.addEventListener("resize", drawOverlay);
     const pick = (e) => {
-      const rr = cv.getBoundingClientRect();
-      const c = clamp(Math.floor(((e.clientX - rr.left) / rr.width) * Wm), 0, Wm - 1), r = clamp(Math.floor(((e.clientY - rr.top) / rr.height) * Hm), 0, Hm - 1);
+      const rr = cv.getBoundingClientRect(), px = e.clientX - rr.left - cv.clientLeft, py = e.clientY - rr.top - cv.clientTop;
+      const c = clamp(Math.floor((px / cv.clientWidth) * Wm), 0, Wm - 1), r = clamp(Math.floor((py / cv.clientHeight) * Hm), 0, Hm - 1);
       return { c, r, b: data[r * Wm + c], w: toWorld(c, r) };
     };
     cv.addEventListener("pointermove", (e) => {
       const p = pick(e);
       let fate = "no escape by t = " + FATE.tMax;
-      if (p.b !== 255) { const k = p.b >> 6, q = p.b & 63; const t = FATE.tLo * Math.exp((q / 63) * Math.log(FATE.tMax / FATE.tLo)); fate = `<span style="color:${GLOW[k]}">●</span> body ${k + 1} escapes at t ≈ ${t.toFixed(t < 10 ? 1 : 0)}`; }
+      if (p.b === 254) fate = "integration did not finish cleanly";
+      else if (p.b !== 255) { const k = p.b >> 6, q = p.b & 63; const t = FATE.tLo * Math.exp((q / 63) * Math.log(FATE.tMax / FATE.tLo)); fate = `<span style="color:${GLOW[k]}">●</span> body ${k + 1} escapes at t ≈ ${t.toFixed(t < 10 ? 1 : 0)}`; }
       showTip(e, `<div class="k">body 3 starts at (${p.w[0].toFixed(3)}, ${p.w[1].toFixed(3)})</div><div>${fate}</div><div class="k">click to run it</div>`);
     });
     cv.addEventListener("pointerleave", hideTip);
