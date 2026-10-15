@@ -98,9 +98,10 @@ def shape_sphere(x, m, normal=None):
     """Project the triangle formed by the three bodies onto Montgomery's shape sphere.
 
     Uses mass-weighted Jacobi vectors. Returns a unit vector (w1, w2, w3):
-      * the poles (w3 = ±1) are the two Lagrange equilateral triangles,
-      * the equator (w3 = 0) holds every collinear (Euler) configuration,
-      * the three binary-collision points also sit on the equator.
+      * the equator (w3 = 0) holds every collinear configuration, including the Euler
+        solutions and the three binary-collision points,
+      * the two Lagrange equilateral triangles sit at w3 = ±sqrt(3 m1 m2 m3 M)/(m1m2+m2m3+m3m1),
+        which is a pole (|w3| = 1) only when the masses are equal.
     """
     m1, m2, m3 = m
     rho1 = x[1] - x[0]

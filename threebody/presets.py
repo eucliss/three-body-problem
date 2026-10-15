@@ -164,7 +164,8 @@ def kepler16():
 
 def sitnikov(e=0.2, z0=1.0, vz0=0.0, m3=1e-5):
     """Sitnikov problem: two equal stars on an eccentric orbit, a third (light) body
-    oscillating along the axis through their barycentre. Chaotic for e > 0."""
+    oscillating along the axis through their barycentre. For e > 0 the phase space is mixed:
+    small oscillations are regular, and Moser proved chaotic orbits exist."""
     x1, v1, x2, v2 = kepler_pair(0.5, 0.5, 1.0, e)
     return _pack([0.5, 0.5, m3], [x1, x2, [0, 0, z0]], [v1, v2, [0, 0, vz0]])
 

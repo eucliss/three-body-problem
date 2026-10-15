@@ -25,25 +25,33 @@ function quantize(t, tmax) {
   return Math.max(0, Math.min(63, q));
 }
 
+/* Integrate one pixel. k = escaper (0-2), -1 = no escape by tmax, -2 = unresolved: the run hit
+   the step cap, threw, or lost accuracy (energy error above 1e-6 over the 64 steps after the
+   stop; checking a single instant would misfire at a pericentre, where T and U are huge and E is
+   only known to ~U*tol). */
 function fate(px, py, tmax) {
   const m = [1, 1, 1];
   const cx = px / 3, cy = py / 3; // centre of mass
   const x = [-0.5 - cx, -cy, 0, 0.5 - cx, -cy, 0, px - cx, py - cy, 0];
   const v = new Array(9).fill(0);
   const s = new NBody(m, x, v, { tol: TOL });
-  let c = null;
+  let k = -1, tEsc = 0;
   try {
     while (s.t < tmax && s.steps < 150000) {
       s.step();
       if ((s.steps & 3) === 0) {
-        c = classify(s.x, s.v, m, 1, 3);
-        if (c.state === "escape") return { k: c.third, t: s.t };
+        const c = classify(s.x, s.v, m, 1, 3);
+        if (c.state === "escape") { k = c.third; tEsc = s.t; break; }
       }
     }
+    if (k === -1 && s.t < tmax) return { k: -2, t: s.t };
+    let dE = s.relEnergyError();
+    for (let extra = 0; extra < 64 && dE > 1e-6; extra++) { s.step(); dE = Math.min(dE, s.relEnergyError()); }
+    if (dE > 1e-6) return { k: -2, t: s.t };
   } catch (e) {
-    return { k: -1, t: s.t };
+    return { k: -2, t: s.t };
   }
-  return { k: -1, t: s.t };
+  return { k, t: k >= 0 ? tEsc : s.t };
 }
 
 if (isMainThread) {
@@ -58,13 +66,13 @@ if (isMainThread) {
   const finish = () => {
     // row 0 = top (y = Y_MAX), column 0 = left (x = -X_MAX)
     const full = half;
-    const counts = [0, 0, 0, 0];
-    for (const b of half) counts[b === 255 ? 3 : b >> 6]++;
+    const counts = [0, 0, 0, 0, 0];
+    for (const b of half) counts[b === 255 ? 3 : b === 254 ? 4 : b >> 6]++;
     const out = {
       width: W, height: H, xMin: -X_MAX, xMax: X_MAX, yMin: 0, yMax: Y_MAX,
       tMax: TMAX, tLo: T_LO, tol: TOL,
-      note: "byte = escaper*64 + q (q = 63*ln(t/tLo)/ln(tMax/tLo)), 255 = no escape by tMax",
-      counts: { body1: counts[0], body2: counts[1], body3: counts[2], none: counts[3] },
+      note: "byte = escaper*64 + q (q = 63*ln(t/tLo)/ln(tMax/tLo)), 255 = no escape by tMax, 254 = unresolved (step cap, failure, or energy error > 1e-6)",
+      counts: { body1: counts[0], body2: counts[1], body3: counts[2], none: counts[3], unresolved: counts[4] },
       data: Buffer.from(full).toString("base64"),
     };
     fs.writeFileSync(path.join(__dirname, "fatemap.json"), JSON.stringify(out));
@@ -97,7 +105,7 @@ if (isMainThread) {
     for (let c = 0; c < W; c++) {
       const px = pixelX(c, W);
       const f = fate(px, py, TMAX);
-      bytes[c] = f.k < 0 ? 255 : f.k * 64 + quantize(f.t, TMAX);
+      bytes[c] = f.k === -2 ? 254 : f.k < 0 ? 255 : f.k * 64 + quantize(f.t, TMAX);
       times[c] = f.k < 0 ? -1 : f.t;
     }
     parentPort.postMessage({ r, bytes, times });

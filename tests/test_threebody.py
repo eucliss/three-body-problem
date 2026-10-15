@@ -22,7 +22,8 @@ def test_ten_integrals_conserved_through_close_encounters():
     I0 = physics.integrals(x, v, m)
     I1 = physics.integrals(tr.x[-1], tr.v[-1], m)
     assert np.allclose(I1["P"], I0["P"], atol=1e-11)
-    assert np.allclose(I1["L"], I0["L"], atol=1e-9)
+    # after the ejection |x| ~ 50 and m|x||v| ~ 500 per body: 1e-8 absolute is ~1e-11 relative
+    assert np.allclose(I1["L"], I0["L"], atol=1e-8)
     assert np.allclose(I1["com"], I0["com"], atol=1e-9)
 
 
@@ -47,8 +48,8 @@ def test_matches_scipy_dop853():
 
     ref = solve_ivp(f, (0, t_end), np.concatenate([x.ravel(), v.ravel()]),
                     method="DOP853", rtol=1e-13, atol=1e-13)
-    # chaotic system with close encounters: agreement to ~1e-6 means both are right
-    assert np.abs(tr.x[-1].ravel() - ref.y[:9, -1]).max() < 1e-5
+    # chaotic system with a 4e-4 close encounter: the two independent methods agree to ~2e-10
+    assert np.abs(tr.x[-1].ravel() - ref.y[:9, -1]).max() < 1e-8
 
 
 def test_figure_eight_is_periodic():
@@ -62,7 +63,7 @@ def test_lagrange_triangle_rotates_rigidly(masses):
     m, x, v, tr = run(presets.lagrange(masses), 3.0)
     d0 = [np.linalg.norm(x[i] - x[j]) for i, j in ((0, 1), (1, 2), (0, 2))]
     d1 = [np.linalg.norm(tr.x[-1][i] - tr.x[-1][j]) for i, j in ((0, 1), (1, 2), (0, 2))]
-    assert np.allclose(d0, 1.0) and np.allclose(d1, 1.0, atol=1e-8)
+    assert np.allclose(d0, 1.0) and np.allclose(d1, 1.0, atol=1e-11)
 
 
 def test_routh_criterion():
@@ -106,6 +107,41 @@ def test_regularization_survives_head_on_collision():
     assert tr.stats["dE_rel"] < 1e-8
 
 
+@pytest.mark.parametrize("shift", [(0.0, 0.0), (0.34, 0.3), (0.5, 0.0)])
+def test_collision_is_translation_invariant(shift):
+    # Absolute coordinates resolve a separation r near |x| ~ 0.5 only to ulp(0.5)/r, which broke
+    # the regularization away from the origin. Triangle variables make this shift-invariant.
+    m = np.array([1.0, 1.0, 1e-3])
+    x = np.array([[-0.5, 0, 0], [0.5, 0, 0], [0, 5, 0]], float) + np.array([*shift, 0.0])
+    tr = Solver(m, x, np.zeros((3, 3)), tol=1e-12).integrate(3.0)
+    assert np.isfinite(tr.x).all()
+    assert tr.stats["dE_rel"] < 1e-8
+
+
+def test_near_radial_kepler_pair_far_from_origin():
+    # pericentre 1e-9 with the pair centred at (0.34, 0.3): energy kept to ~1e-10 after two
+    # pericentre passages. (End at apocentre: at the pericentre instant T and U are ~1e9, so a state
+    # accurate to the relative tolerance only fixes E to ~U*tol, whatever the integrator.)
+    rp, ra, M = 1e-9, 0.0237, 2.0
+    a, e = (rp + ra) / 2, (ra - rp) / (ra + rp)
+    va = np.sqrt(M * (1 - e) / (a * (1 + e)))
+    c = np.array([0.34, 0.3, 0.0])
+    x = np.array([c + [-ra / 2, 0, 0], c + [ra / 2, 0, 0], c + [0, 50, 0]])
+    v = np.array([[0, -va / 2, 0], [0, va / 2, 0], [0, 0, 0]])
+    P = 2 * np.pi * np.sqrt(a**3 / M)
+    s = Solver([1.0, 1.0, 1e-12], x, v, tol=1e-11)
+    tr = s.integrate(2 * P)
+    assert tr.stats["dE_rel"] < 1e-8
+    assert s.steps < 200
+
+
+def test_uniform_output_grid():
+    m, x, v = presets.figure_eight()
+    tr = Solver(m, x, v).integrate(1.0, dt_out=0.1)
+    assert np.allclose(np.diff(tr.t), 0.1, atol=1e-12)
+    assert len(tr.t) == 11
+
+
 def test_regularized_beats_fixed_step_methods():
     m, x, v = presets.pythagorean()
     E0 = physics.energy(x, v, m)
@@ -118,9 +154,17 @@ def test_regularized_beats_fixed_step_methods():
 
 def test_shape_sphere_landmarks():
     m, x, _ = presets.lagrange((1, 1, 1))
-    assert abs(abs(physics.shape_sphere(x, m)[2]) - 1) < 1e-12  # pole
+    assert abs(abs(physics.shape_sphere(x, m)[2]) - 1) < 1e-12  # pole, equal masses only
     (m, x, _), _ = presets.euler((1, 1, 1))
     assert abs(physics.shape_sphere(x, m)[2]) < 1e-12  # equator
+    # unequal masses: the equilateral triangle sits at |w3| = sqrt(3 m1 m2 m3 M) / sum m_i m_j < 1
+    for masses in [(1, 0.5, 0.25), (3, 4, 5), (1, 2, 3)]:
+        m, x, _ = presets.lagrange(masses)
+        m1, m2, m3 = masses
+        expect = np.sqrt(3 * m1 * m2 * m3 * sum(masses)) / (m1 * m2 + m2 * m3 + m3 * m1)
+        assert abs(abs(physics.shape_sphere(x, m)[2]) - expect) < 1e-12
+        (m, x, _), _ = presets.euler(masses)
+        assert abs(physics.shape_sphere(x, m)[2]) < 1e-12
 
 
 def test_lyapunov_positive_for_chaos():

@@ -30,7 +30,7 @@ $$
 
 ## What "solving" it means
 
-The motion conserves ten quantities: energy, momentum (3), angular momentum (3) and the centre-of-mass drift (3). Bruns (1887) and Poincaré (1890) proved there are no others, so **no general closed-form solution exists**. What does exist:
+The motion conserves ten quantities: energy, momentum (3), angular momentum (3) and the centre-of-mass drift (3). Bruns (1887) proved there are no further integrals algebraic in positions and velocities, and Poincaré (1890) none that are uniform and analytic, so **no general closed-form solution exists**. What does exist:
 
 1. **Sundman's series** (1912) converge for all time when $\mathbf L \neq 0$, but need on the order of $10^{8{,}000{,}000}$ terms in practice.
 2. **Exact special solutions.** Lagrange's equilateral triangle and Euler's collinear line work for any masses (`presets.lagrange`, `presets.euler`). The figure-eight and the Šuvakov–Dmitrašinović orbits are periodic.
@@ -44,30 +44,41 @@ $$
 \frac{dt}{ds}=\frac{1}{T+B},\qquad \frac{d\mathbf v_i}{ds}=\frac{\mathbf a_i}{U},\qquad B=-E_0 .
 $$
 
-The time transformation regularizes binary collisions: the leapfrog reproduces Kepler orbits exactly, even through a collision. Richardson extrapolation over 2, 4, 6, … substeps gives roughly tenth-order accuracy with automatic step control.
+The time transformation regularizes binary collisions: the leapfrog keeps a two-body orbit exactly on its Kepler ellipse, even through a collision. Richardson extrapolation over 2, 4, 6, … substeps gives roughly tenth-order accuracy with automatic step control.
+
+**Triangle variables.** Both solvers integrate the three sides $\mathbf s_i$ of the triangle (the form above) instead of absolute positions. In absolute coordinates a pair at separation $r$ near $|\mathbf x| \approx 0.5$ is resolved only to $\mathrm{ulp}(0.5)/r$, about $10^{-7}$ relative at $r = 10^{-9}$, and the regularization silently fails. Integrating each side directly keeps a tight pair at full relative precision wherever it is. The leapfrog in these variables is the same map, evaluated on differences. Exact-time output lands with the regularized scheme too, by a bracketed secant search on the fictitious step.
+
+**Bit-identical in every JavaScript engine.** The JS integration path uses only operations IEEE-754 requires to be correctly rounded (+ − × ÷ √). The built-in power function differs between V8 versions, so the step controller takes n-th roots by bisection. A fate-map pixel computed in Node therefore replays exactly in a browser: 40 of 40 chaotic runs end bit-identical in Node 22 and Chromium 141, and 40 of 40 clicked fate-map pixels replay the stored fate.
 
 ```python
 from threebody import Solver, presets, analysis
 
 m, x, v = presets.pythagorean()           # Burrau 1913: masses 3, 4, 5 at rest
 traj = Solver(m, x, v, tol=1e-12).integrate(70.0, dt_out=0.01)
-print(traj.stats["dE_rel"])                # ~1e-11
+print(traj.stats["dE_rel"])                # ~3e-11
 print(analysis.classify(traj.x[-1], traj.v[-1], m))   # mass 3 escapes, 4+5 bound, e ≈ 0.99
 ```
 
-## Validation (`tests/test_threebody.py`, 16 tests)
+## Validation (`tests/test_threebody.py`, 21 tests)
+
+Numbers at tolerance 10⁻¹² unless stated.
 
 | Check | Result |
 |---|---|
-| Pythagorean problem outcome (Szebehely & Peters 1967) | mass 3 ejected at t ≈ 60, 4+5 binary with e ≈ 0.988 |
-| Energy through a 0.0006 close approach | 7 × 10⁻¹¹ relative error over t = 80 |
-| Agreement with SciPy DOP853 (rtol 10⁻¹³), chaotic run to t = 15 | < 10⁻⁵ |
-| Figure-eight return after one period | 3 × 10⁻⁸ (limited by 8-digit published ICs) |
-| Lagrange triangle, 3 mass sets | stays equilateral to 10⁻⁸ |
-| Euler line, 3 mass sets | λ solves Euler's quintic; stays collinear to 10⁻⁷ |
-| Head-on collision (true singularity) | passes through, energy error < 10⁻⁸ |
-| Fixed-step RK4 / leapfrog on the same problem | both blow up at the first close encounter |
+| Pythagorean problem outcome (Szebehely & Peters 1967) | mass 3 ejected (v∞ = 2.17) at t ≈ 60; 4+5 binary with e = 0.989 |
+| Energy through its closest approach (0.0004, masses 4 and 5 at t = 15.83) | 3 × 10⁻¹¹ relative error at t = 80 |
+| Momentum, angular momentum, centre of mass at t = 80 | 2 × 10⁻¹⁶, 2 × 10⁻¹⁰, 2 × 10⁻¹⁵ |
+| Agreement with SciPy DOP853 (rtol 10⁻¹³), chaotic run to t = 15 | 2 × 10⁻¹⁰ |
+| Figure-eight from the 8-digit published ICs, one period | returns to 3 × 10⁻⁸ (limited by the ICs), energy 4 × 10⁻¹³ |
+| Lagrange triangle, 3 mass sets | stays equilateral to 3 × 10⁻¹³ |
+| Euler line, 3 mass sets | λ solves Euler's quintic; stays collinear |
+| Head-on collision (true singularity), also shifted to (0.34, 0.3) | passes through in 39 steps, energy 6 × 10⁻¹⁰, identical after the shift |
+| Kepler pair with pericentre 10⁻⁹, centred at (0.34, 0.3) | energy kept to 10⁻¹⁰ over two pericentre passages |
+| Shape sphere landmarks | Euler lines on the equator; Lagrange triangles at the predicted latitude for unequal masses |
+| Fixed-step RK4 / leapfrog (dt = 10⁻³) on Burrau's problem | energy errors of 4 × 10² and 10² by t = 3 (this solver: 10⁻¹¹) |
 | Newton-refined periodic orbits | close to ~10⁻¹² (published values: ~10⁻³) |
+
+At the instant of a very close pericentre, T and U are both huge, so even an exact-to-tolerance state only fixes E to about U × tol. Energy errors read mid-encounter can briefly show 10⁻⁸ and return to ~10⁻¹¹ afterwards. The tests measure away from such instants.
 
 ## Periodic orbits refined by Newton shooting
 
@@ -99,7 +110,7 @@ print(analysis.classify(traj.x[-1], traj.v[-1], m))   # mass 3 escapes, 4+5 boun
 - **Butterfly twin**: a second copy displaced by δ, with its separation measured exactly at the same instants and a fitted Lyapunov exponent.
 - **Instruments**: energy and angular-momentum drift, nearest-neighbour distances, Montgomery's shape sphere, outcome classification (escape, hierarchical, interplay) and an exact return check for periodic orbits.
 - **Editing**: pause, then drag a body or its velocity arrow, or edit the table of initial conditions. Mass sliders rebuild the Lagrange and Euler solutions for the new masses.
-- **Fate map**: 96,000 free-fall integrations (400 × 240), coloured by escape time or by escaper. Clicking a pixel replays that exact integration.
+- **Fate map**: 96,000 free-fall integrations (400 × 240), coloured by escape time or by escaper. Clicking a pixel replays that exact integration. Pixels whose run hit the step limit or ended with an energy error above 10⁻⁶ are marked unresolved instead of guessed. The two halves are mirror images computed independently: they agree on the escaper for 99.9% of pixels in smooth regions and 64% in chaotic ones, which shows rounding in the 16th digit deciding outcomes.
 
 ## Running it
 
