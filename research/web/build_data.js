@@ -154,7 +154,8 @@ for (const f of fs.readdirSync(path.join(R, "runs")).filter((f) => /^m\d+_N800_T
   if (!rows.length) continue;
   const m3 = rows[0].m3;
   const log = fs.existsSync(path.join(R, "runs/" + f.replace("_orbits.jsonl", ".log"))) ? fs.readFileSync(path.join(R, "runs/" + f.replace("_orbits.jsonl", ".log")), "utf8") : "";
-  const cand = (log.match(/(\d+) candidate rows/) || [])[1], jobs = (log.match(/(\d+) refinement jobs/) || [])[1];
+  const last = (re) => { const all = [...log.matchAll(re)]; return all.length ? all[all.length - 1][1] : null; };
+  const cand = last(/(\d+) candidate rows/g), jobs = last(/(\d+) refinement jobs/g); // logs can hold reruns: use the last
   // drop repeated traversals (u^k found at k T): keep primitive orbits only
   const prim = rows.filter((o) => {
     if (o.power === 1) return true;

@@ -74,7 +74,7 @@ h1 em { font-style: italic; font-weight: 500; background: linear-gradient(100deg
 .hud-tr { top: 16px; right: 16px; display: grid; justify-items: end; gap: 8px; }
 .clock { font-family: var(--f-mono); font-size: var(--step--1); color: var(--muted); text-shadow: 0 1px 8px rgba(3, 5, 12, 0.95); white-space: nowrap; }
 .clock b { color: var(--ink); font-weight: 500; }
-.ctrl { display: inline-flex; gap: 6px; }
+.ctrl { display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font: 500 var(--step--1) var(--f-body); color: var(--ink); background: rgba(17, 26, 49, 0.85); border: 1px solid var(--line-strong); border-radius: 9px; padding: 6px 12px; cursor: pointer; min-height: 34px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .btn:hover { border-color: var(--accent); }
 .btn svg { width: 14px; height: 14px; }
@@ -219,7 +219,7 @@ figcaption b { color: var(--ink); font-weight: 500; }
 .steps li strong { display: block; margin-bottom: 2px; }
 
 /* tables */
-.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); margin: 16px 0; }
+.tbl { overflow: auto; max-height: 640px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); margin: 16px 0; overscroll-behavior: contain; }
 .tbl table { border-collapse: collapse; width: 100%; font-size: 0.75rem; }
 .tbl th { text-align: left; font: 500 0.6875rem var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); padding: 10px 12px; border-bottom: 1px solid var(--line-strong); white-space: nowrap; position: sticky; top: 0; background: var(--panel); }
 .tbl td { padding: 8px 12px; border-bottom: 1px solid var(--line); color: var(--soft); white-space: nowrap; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
@@ -263,7 +263,8 @@ footer { max-width: 1180px; margin: 96px auto 0; padding-top: 18px; border-top: 
 @media (max-width: 720px) {
   .stage { height: min(82vh, 128vw); min-height: 420px; }
   .hud-tl { right: 16px; top: 64px; left: 16px; }
-  .hud-tr { left: 12px; right: 12px; top: 12px; grid-auto-flow: column; justify-content: space-between; align-items: center; }
+  .hud-tr { left: 12px; right: 12px; top: 12px; justify-items: end; }
+  .hud-tr .clock, .hud-tr [aria-label="Speed"] { display: none; }
   .hud-bl { right: 16px; left: 16px; bottom: 12px; }
   .hud-br { display: none; }
   .wordbar { grid-template-columns: minmax(0, 1fr); padding: 12px 16px; }
@@ -306,6 +307,10 @@ footer { max-width: 1180px; margin: 96px auto 0; padding-top: 18px; border-top: 
         <div class="clock" id="clock">t <b>0.00</b> of <b>38.30</b></div>
         <div class="ctrl">
           <button class="btn" id="play" type="button" aria-label="Pause"><svg viewBox="0 0 16 16" aria-hidden="true"><path id="playIcon" d="M4 3h3v10H4zM9 3h3v10H9z" fill="currentColor"/></svg></button>
+          <div class="seg" role="group" aria-label="View">
+            <button type="button" data-view="all" aria-pressed="true">Whole</button>
+            <button type="button" data-view="pair" aria-pressed="false">Heavy pair</button>
+          </div>
           <div class="seg" role="group" aria-label="Speed">
             <button type="button" data-speed="0.5" aria-pressed="false">½×</button>
             <button type="button" data-speed="1" aria-pressed="true">1×</button>
@@ -408,7 +413,7 @@ footer { max-width: 1180px; margin: 96px auto 0; padding-top: 18px; border-top: 
       <div class="label"><b>iv</b>Method</div>
       <div class="body">
         <h2>How we found it</h2>
-        <p>For each mass we launched about half a million trial orbits on a fine grid of starting velocities and watched each one for up to 100 time units. A periodic orbit returns exactly to where it began, so we kept every trial that came back close to its own start. The map shows that closeness for every trial (400 × 400 here, watched to t = 60). Bright threads are near-returns. The few points where a thread pinches to a single bright dot are the periodic orbits. At m₃ = 0.25 the new rungs sit in one tight cluster: each rung starts almost where the last one did.</p>
+        <p>For each mass we launched about half a million trial orbits on a fine grid of starting velocities and watched each one for up to 100 time units. A periodic orbit returns exactly to where it began, so we kept every trial that came back close to its own start. The map shows that closeness for every trial (400 × 400 here, watched to t = 60). Bright threads are near-returns. The few points where a thread pinches to a single bright dot are the periodic orbits. The new rungs sit in one tight cluster along the edge of a bright thread: each rung starts almost where the last one did. The large glowing region at the bottom of the m₃ = 0.5 map is different in kind: most likely an island of regular, quasi-periodic motion, where orbits keep coming back near their start without ever closing exactly.</p>
         <div class="mapwrap">
           <div>
             <div class="seg" role="group" aria-label="Map mass" id="mapSeg" style="margin-bottom: 10px"></div>
@@ -431,6 +436,7 @@ footer { max-width: 1180px; margin: 96px auto 0; padding-top: 18px; border-top: 
           <li><p><strong>Compare.</strong> Check the word against all 2,044 published words for this kind of orbit, and the numbers against all published starting conditions.</p><span class="n" id="nNew">—</span></li>
           <li><p><strong>Follow and test.</strong> Continue each new orbit to other masses, predict the next rung from the even spacing, and measure stability from the full monodromy matrix.</p><span class="n" id="nBranches">6 branches</span></li>
         </ol>
+        <p>As a control we ran the same scan at m₃ = 0.5, a mass the 2018 catalogue covers. It refined 8 distinct orbits and every one is in that catalogue, so the comparison raised no false alarms. The same scan also missed the ladder at m₃ = 0.5, including the catalogued rungs 1 and 2; the rungs shown at that mass come from following the family up from m₃ = 0.25. A grid scan misses orbits, and that is presumably how the 2018 survey missed rungs 3 to 5.</p>
       </div>
     </section>
 

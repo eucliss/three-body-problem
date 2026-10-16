@@ -73,7 +73,7 @@ The (Ba) letters are written while the heavy pair winds and the (bA) letters whi
 | 3 | 0.75 | **new** | 0.5708736577 | 0.3121779086 | 68.71629418 | 20.585 | 3.7e-10 | ×119.1 |
 | 1 | 1 | catalogued | 0.6150407229 | 0.5226158544 | 37.32052360 | 15.048 | – | – |
 
-3′ at m₃ = 0.25 is a second orbit with the rung-3 word: a different orbit (T* 11.72 against 13.16), much more unstable, that meets this slice at two different scales.
+3′ at m₃ = 0.25 is a second orbit with the rung-3 word: a different orbit (T* 11.72 against 13.16) and much more unstable. Half a period in, it crosses the slice again at a different scale (0.8905), so the same orbit also starts from (v₁, v₂) = (0.1586412867, 0.1003753072) with T = 20.7687610 (closure 8×10⁻¹¹). Count it once.
 
 ## What is new, and what is not
 
@@ -85,7 +85,7 @@ The (Ba) letters are written while the heavy pair winds and the (bA) letters whi
 
 ## Checks
 
-1. **Pipeline calibration.** At m₃ = 1 the search recovers known orbits and flags none as new. The topology code reproduces the published words of 12 Šuvakov–Dmitrašinović orbits, including the 44-letter bumblebee.
+1. **Pipeline calibration.** At m₃ = 1 the search recovers known orbits and flags none as new. At m₃ = 0.5, a mass Li, Jing & Liao (2018) catalogued, the full 800 × 800 scan refines 8 distinct orbits and all 8 are in their catalogue, so the comparison raises no false alarms there. That scan also misses the ladder at m₃ = 0.5, including the catalogued rungs 1 and 2. The m₃ = 0.5 rungs come from continuation. Grid scans miss orbits, which is also how a survey can miss rungs 3 to 5. The topology code reproduces the published words of 12 Šuvakov–Dmitrašinović orbits, including the 44-letter bumblebee.
 2. **End-to-end anchors.** Following rung 1 by continuation from m₃ = 0.25 lands on Li, Jing & Liao's I.A i.c. 2 at m₃ = 0.75 and Li & Liao's equal-mass I.A i.c. 3, both to all ten published digits (`results/anchors.json`). Continuation of rungs 1 and 2 downward lands on orbits the grid found independently at m₃ = 0.15, 0.2 and 0.3.
 3. **Independent review** (`verify/`, `results/verification.json`). Separate reviewers rewrote the integrator (SciPy DOP853 and Radau IIA, unregularized) and the topology code from scratch, and compared words against all catalogue words under rotation, inversion, mirror image and relabelling of the equal bodies. Every claim held: the stated period is minimal, there is no collision (closest approach 0.025), and energy and angular momentum are conserved to 10⁻¹². A skeptic pass corrected two over-claims by the reviewers: a "generous" word matching that allowed non-physical case swaps, and a symmetry-class statement about 3′.
 4. **Stability** from the full 12 × 12 monodromy matrix, after removing the eight trivial multipliers exactly (restricting to perturbations that conserve the integrals, then quotienting out time shift and rotation). The method marks the figure-eight and moth I stable and butterfly I, yin-yang and goggles unstable, as published.

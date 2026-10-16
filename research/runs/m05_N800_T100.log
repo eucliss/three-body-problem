@@ -2,3 +2,38 @@
 10%  121s  candidates 23819
 15%  165s  candidates 31436
 20%  203s  candidates 35579
+25%  235s  candidates 36946
+30%  262s  candidates 37012
+35%  284s  candidates 37068
+40%  307s  candidates 37091
+45%  323s  candidates 37290
+50%  342s  candidates 37335
+55%  355s  candidates 37366
+60%  366s  candidates 37405
+65%  378s  candidates 37551
+70%  386s  candidates 37557
+75%  394s  candidates 37558
+80%  398s  candidates 37558
+85%  401s  candidates 37558
+90%  402s  candidates 37558
+95%  403s  candidates 37558
+100%  404s  candidates 37558
+done m3=0.5 N=800 Tmax=100 in 404s, 37558 candidate rows
+37558 rows -> 3000 candidates in 14526 cells (dmax 0.15, cell 0.004, tbin 0.5, keep 3)
+m3=0.5: 3000 refinement jobs
+200/3000  converged 4  distinct 3  32s
+400/3000  converged 6  distinct 4  65s
+600/3000  converged 10  distinct 5  94s
+800/3000  converged 11  distinct 5  120s
+1000/3000  converged 12  distinct 5  147s
+1200/3000  converged 16  distinct 5  178s
+1400/3000  converged 18  distinct 6  208s
+1600/3000  converged 23  distinct 7  236s
+1800/3000  converged 25  distinct 8  265s
+2000/3000  converged 28  distinct 10  294s
+2200/3000  converged 28  distinct 10  324s
+2400/3000  converged 30  distinct 10  352s
+2600/3000  converged 34  distinct 10  383s
+2800/3000  converged 36  distinct 11  412s
+3000/3000  converged 38  distinct 12  440s
+done: 3000 jobs, 38 converged, 12 distinct orbits, 440s

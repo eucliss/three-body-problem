@@ -53,6 +53,11 @@
     }
     o.turnsMax = Math.max(...o.TH.map(Math.abs));
     o.label = o.extra ? "3′" : String(o.k);
+    { // bounding box of the heavy pair alone, for the close-up view
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (let i = 0; i < o.N; i++) for (const c of [0, 2]) { x0 = Math.min(x0, o.P[i * 6 + c]); x1 = Math.max(x1, o.P[i * 6 + c]); y0 = Math.min(y0, o.P[i * 6 + c + 1]); y1 = Math.max(y1, o.P[i * 6 + c + 1]); }
+      o.pairBox = [(x0 + x1) / 2, (y0 + y1) / 2, Math.max(x1 - x0, y1 - y0) * 1.08];
+    }
     ORB[o.id] = o;
   }
   const MASSES = [...new Set(D.orbits.map((o) => o.m3))].filter((m) => D.orbits.filter((o) => o.m3 === m).length > 1).sort((a, b) => a - b);
@@ -101,9 +106,10 @@
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; return true; }
     return false;
   }
-  function viewFor(o, w, h, fill, dx, dy) {
-    const s = (Math.min(w, h) * fill) / o.box[2];
-    return { s, X: (x) => w / 2 + (dx || 0) + (x - o.box[0]) * s, Y: (y) => h / 2 + (dy || 0) - (y - o.box[1]) * s };
+  function viewFor(o, w, h, fill, dx, dy, box) {
+    box = box || o.box;
+    const s = (Math.min(w, h) * fill) / box[2];
+    return { s, X: (x) => w / 2 + (dx || 0) + (x - box[0]) * s, Y: (y) => h / 2 + (dy || 0) - (y - box[1]) * s };
   }
   function ghost(ctx, o, v, d, alpha, wide) {
     ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.lineJoin = ctx.lineCap = "round";
@@ -336,12 +342,13 @@
   /* ---------------- hero ---------------- */
   const stage = $("stage"), sky = $("sky"), ghostCv = $("ghost"), live = $("live"), lens = $("lens"), spinCv = $("spin");
   let mass = 0.5, cur = ORB["L4@0.5"] || D.orbits[0], tau = 0, playing = !REDUCED, speed = 1;
-  let dragging = false, fYaw = 0.9, fPitch = 0.38;
+  let dragging = false, fYaw = 0.9, fPitch = 0.38, closeUp = false;
   const isNarrow = () => matchMedia("(max-width: 1100px)").matches;
 
   function heroView() {
     fit(live);
     const w = live.width, h = live.height, narrow = w < 900 * DPR();
+    if (closeUp) return viewFor(cur, w, h, narrow ? 0.86 : 0.8, narrow ? 0 : -w * 0.03, narrow ? h * 0.02 : h * 0.01, cur.pairBox);
     return viewFor(cur, w, h, narrow ? 0.8 : 0.74, narrow ? 0 : -w * 0.03, narrow ? h * 0.02 : h * 0.01);
   }
   function renderGhost() {
@@ -574,6 +581,11 @@
   }));
   playIcon();
   if (!playing) $("play").setAttribute("aria-label", "Play");
+  document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => {
+    closeUp = b.dataset.view === "pair";
+    document.querySelectorAll("[data-view]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    renderGhost(); renderHero();
+  }));
 
   /* ---------------- small multiples ---------------- */
   const multIds = ["L1@0.5", "L2@0.5", "L3@0.5", "L4@0.5", "L5@0.5"].filter((id) => ORB[id]);
@@ -758,7 +770,7 @@
     return RAMP[RAMP.length - 1][1];
   }
   const MAPS = D.maps.map((M) => ({ ...M, dq: b64(M.d, Uint8Array), Tq: b64(M.T, Uint8Array) }));
-  let mapIdx = 0;
+  let mapIdx = Math.max(0, MAPS.findIndex((M) => M.m3 === 0.5));
   function renderMap() {
     const M = MAPS[mapIdx]; if (!M) return;
     const base = $("mapBase"), N = M.N;
@@ -880,7 +892,7 @@
   function fillTable() {
     const rows = D.orbits.slice().sort((a, b) => a.m3 - b.m3 || a.k - b.k || (a.extra ? 1 : -1));
     const head = "<tr><th>Rung</th><th>m₃</th><th>Status</th><th>v₁</th><th>v₂</th><th>T</th><th>T*</th><th>Word</th><th>Growth</th><th>Closure</th><th></th></tr>";
-    const body = rows.map((o) => `<tr data-id="${o.id}"><td>${o.label}</td><td>${o.m3}</td><td class="${o.status === "new" ? "ok" : ""}">${o.status === "new" ? "new" : o.firstAtMass ? "new at mass" : "catalogued"}</td><td>${o.v1.toFixed(10)}</td><td>${o.v2.toFixed(10)}</td><td>${o.T.toFixed(8)}</td><td>${o.Tstar.toFixed(4)}</td><td class="w">${compactWord(o)}</td><td>${o.maxMult ? "×" + fmt(o.maxMult, 1) : "—"}</td><td class="cl">—</td><td><button type="button" data-act="check">Check</button> <button type="button" data-act="copy">Copy</button> <button type="button" data-act="view">View</button></td></tr>`).join("");
+    const body = rows.map((o) => `<tr data-id="${o.id}"><td>${o.label}</td><td>${o.m3}</td><td class="${o.status === "new" ? "ok" : ""}">${o.status === "new" ? "new" : o.firstAtMass ? "known word" : "catalogued"}</td><td>${o.v1.toFixed(10)}</td><td>${o.v2.toFixed(10)}</td><td>${o.T.toFixed(8)}</td><td>${o.Tstar.toFixed(4)}</td><td class="w">${compactWord(o)}</td><td>${o.maxMult ? "×" + fmt(o.maxMult, 1) : "—"}</td><td class="cl">—</td><td><button type="button" data-act="check">Check</button> <button type="button" data-act="copy">Copy</button> <button type="button" data-act="view">View</button></td></tr>`).join("");
     $("icTable").innerHTML = `<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
     $("icTable").addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
