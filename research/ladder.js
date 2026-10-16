@@ -1,6 +1,8 @@
 /* Extend the ladder A(Ba)^k B a(bA)^k b at fixed m3 by extrapolating (v1, v2, T) from the previous
  * rungs and refining. A rung counts only if Newton converges AND its word is exactly the predicted
- * one. Usage: node ladder.js m3 kmax out.json  (seeds: rungs found by the grid search) */
+ * one. Usage: node ladder.js m3 kmax out.json seeds.jsonl
+ *   seeds.jsonl: a process.js *_orbits.jsonl holding the lower rungs found by the grid search.
+ *   Also writes local box scans to runs/ladder_box_<m3>_k<k>.jsonl. */
 "use strict";
 const fs = require("fs"), path = require("path");
 const { NBody } = require(path.join(__dirname, "../web/solver.js"));
@@ -39,6 +41,7 @@ function localScanOnce(m3, guess, k, prev, N, shrink) {
   return null;
 }
 const [m3s, kmaxs, out, seedFile] = process.argv.slice(2);
+if (!seedFile) { console.error("Usage: node ladder.js m3 kmax out.json seeds.jsonl (a process.js *_orbits.jsonl)"); process.exit(1); }
 const m3 = +m3s, kmax = +kmaxs;
 // seeds: orbits from a grid-search result file whose word matches the ladder
 const seeds = fs.readFileSync(seedFile, "utf8").trim().split("\n").map(JSON.parse)

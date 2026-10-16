@@ -52,6 +52,7 @@
       acc += d; prev = a; o.TH[i] = acc / (2 * Math.PI);
     }
     o.turnsMax = Math.max(...o.TH.map(Math.abs));
+    o.turns = Math.round(o.turnsMax);
     o.label = o.extra ? "3′" : String(o.k);
     { // bounding box of the heavy pair alone, for the close-up view
       let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
@@ -60,7 +61,7 @@
     }
     ORB[o.id] = o;
   }
-  const MASSES = [...new Set(D.orbits.map((o) => o.m3))].filter((m) => D.orbits.filter((o) => o.m3 === m).length > 1).sort((a, b) => a - b);
+  const MASSES = [...new Set(D.orbits.map((o) => o.m3))].sort((a, b) => a - b);
   const byMass = (m3) => D.orbits.filter((o) => Math.abs(o.m3 - m3) < 1e-9).sort((a, b) => a.k - b.k || (a.extra ? 1 : -1));
 
   /* path position at orbit time t (linear between stored samples); returns the sample index */
@@ -345,8 +346,19 @@
   let dragging = false, fYaw = 0.9, fPitch = 0.38, closeUp = false;
   const isNarrow = () => matchMedia("(max-width: 1100px)").matches;
 
+  let bands = { top: 0, bot: 0 };
+  function measureBands() { // on phones the title block and legend cover the stage edges: keep the orbit between them
+    if (!matchMedia("(max-width: 720px)").matches) { bands = { top: 0, bot: 0 }; return; }
+    const s = stage.getBoundingClientRect(), tl = document.querySelector(".hud-tl").getBoundingClientRect(), bl = document.querySelector(".hud-bl").getBoundingClientRect(), d = DPR();
+    bands = { top: Math.max(0, tl.bottom - s.top + 8) * d, bot: Math.max(0, s.bottom - bl.top + 8) * d };
+  }
   function heroView() {
     fit(live);
+    if (bands.top || bands.bot) {
+      const w = live.width, h = live.height - bands.top - bands.bot, box = closeUp ? cur.pairBox : cur.box;
+      const v = viewFor(cur, w, h, closeUp ? 0.9 : 0.86, 0, 0, box);
+      return { s: v.s, X: v.X, Y: (y) => bands.top + h / 2 - (y - box[1]) * v.s };
+    }
     const w = live.width, h = live.height, narrow = w < 900 * DPR();
     if (closeUp) return viewFor(cur, w, h, narrow ? 0.86 : 0.8, narrow ? 0 : -w * 0.03, narrow ? h * 0.02 : h * 0.01, cur.pairBox);
     return viewFor(cur, w, h, narrow ? 0.8 : 0.74, narrow ? 0 : -w * 0.03, narrow ? h * 0.02 : h * 0.01);
@@ -415,7 +427,7 @@
       g.addColorStop(0, "#fff"); g.addColorStop(0.45, C.glow[b]); g.addColorStop(1, C.body[b]);
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(X, Y, r, 0, 7); ctx.fill();
     }
-    const txt = `${Math.abs(tn).toFixed(1)} of ${cur.k} turn${cur.k === 1 ? "" : "s"}`;
+    const nT = cur.turns, txt = `${Math.abs(tn).toFixed(1)} of ${nT} turn${nT === 1 ? "" : "s"}`;
     if (txt !== lensTxt) { lensTxt = txt; $("lensTurns").textContent = txt; }
     void v;
   }
@@ -457,11 +469,15 @@
       for (let i = 0; i < cur.N; i++) i ? g.lineTo(X(cur.ts[i]), Y(cur.TH[i])) : g.moveTo(X(cur.ts[i]), Y(cur.TH[i]));
       g.strokeStyle = "rgba(170,184,255,0.85)"; g.lineWidth = 1.4 * d; g.stroke();
       g.font = `500 ${Math.round(10 * d)}px "IBM Plex Mono", monospace`; g.textAlign = "center"; g.textBaseline = "alphabetic";
-      const seen = new Map();
+      const seen = new Map(), pairGap = (w - padL - padR) / Math.max(1, cur.spell.length / 2), every = pairGap < 16 * d ? Math.ceil((16 * d) / pairGap) : 1;
+      let pairIdx = -1;
       for (const [ts, ch] of cur.spell) {
         const n = seen.get(ts) || 0; seen.set(ts, n + 1);
+        if (n === 0) pairIdx++;
+        if (pairIdx % every) continue;
         g.fillStyle = ch === ch.toUpperCase() ? "rgba(205,210,223,0.75)" : "rgba(149,157,180,0.75)";
-        g.fillText(ch, Math.min(w - 5 * d, Math.max(5 * d, X(ts) + (n ? 7 * d : 0))), h - 4 * d);
+        const x0 = Math.min(w - 13 * d, Math.max(5 * d, X(ts)));
+        g.fillText(ch, x0 + (n ? 7 * d : 0), h - 4 * d);
       }
       g.fillStyle = "rgba(149,157,180,0.7)"; g.textAlign = "left";
       g.fillText(`${Math.round(cur.turnsMax)} turn${Math.round(cur.turnsMax) === 1 ? "" : "s"}`, padL + 2 * d, top + 9 * d);
@@ -497,8 +513,11 @@
     }
     el.setAttribute("aria-label", `Word ${w}, ${w.length} letters`);
     const k = cur.k;
-    $("formula").innerHTML = `(Ba)<sup>${k + 1}</sup> (bA)<sup>${k + 1}</sup> · <b>${4 * k + 4} letters</b>: Ba while the pair winds, bA while it unwinds`;
-    $("lensCap").textContent = `winds ${k} time${k === 1 ? "" : "s"}, then unwinds`; lensTxt = "";
+    const nT = cur.turns;
+    $("formula").innerHTML = cur.extra
+      ? `(Ba)<sup>${k + 1}</sup> (bA)<sup>${k + 1}</sup> · <b>${4 * k + 4} letters</b>: rung 3's word, but this orbit's pair winds only ${nT} times`
+      : `(Ba)<sup>${k + 1}</sup> (bA)<sup>${k + 1}</sup> · <b>${4 * k + 4} letters</b>: Ba while the pair winds, bA while it unwinds`;
+    $("lensCap").textContent = `winds ${nT} time${nT === 1 ? "" : "s"}, then unwinds`; lensTxt = "";
   }
   function spellUpdate() {
     let lit = 0;
@@ -509,7 +528,7 @@
   }
   function statusText(o) {
     if (o.status === "new") return o.extra ? "New · rung 3's word, a different orbit" : "New · not in any catalogue we could check";
-    if (o.firstAtMass) return "Word known · first reported at this mass";
+    if (o.firstAtMass) return "Word known · not catalogued at this mass";
     return "Known · " + (o.match || "catalogued");
   }
   function select(o, keepTime) {
@@ -519,9 +538,15 @@
     $("rungPill").dataset.status = o.status;
     $("rungStatus").textContent = statusText(o);
     $("legM3").textContent = String(o.m3);
+    measureBands();
     document.querySelectorAll(".rung").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.id === o.id)));
     document.querySelectorAll("#icTable tr[data-id]").forEach((r) => r.classList.toggle("sel", r.dataset.id === o.id));
     renderGhost(); renderWord(); renderHero(); renderFinger(true);
+    revealRung();
+  }
+  function revealRung() {
+    const box = $("rungs"), b = box.querySelector('.rung[aria-pressed="true"]');
+    if (b) box.scrollTo({ left: b.offsetLeft - (box.clientWidth - b.offsetWidth) / 2, top: b.offsetTop - (box.clientHeight - b.offsetHeight) / 2 });
   }
 
   /* ladder rail */
@@ -540,15 +565,16 @@
       b.type = "button"; b.className = "rung"; b.dataset.id = o.id; b.setAttribute("aria-pressed", String(o.id === cur.id));
       const chip = o.status === "new" ? (o.extra ? '<span class="chip extra">new · 2nd shape</span>' : '<span class="chip new">new</span>') : o.firstAtMass ? '<span class="chip">known word</span>' : '<span class="chip">catalogued</span>';
       b.innerHTML = `<canvas aria-hidden="true"></canvas><span class="meta"><span class="kk"><i>k</i>${o.label}</span><span class="tt">T = ${fmt(o.T, 2)} · ${o.spell.length} letters</span>${chip}</span>`;
-      b.setAttribute("aria-label", `Rung ${o.label}, period ${fmt(o.T, 2)}, ${o.status === "new" ? "new" : "catalogued"}`);
+      b.setAttribute("aria-label", `Rung ${o.label}, period ${fmt(o.T, 2)}, ${o.status === "new" ? (o.extra ? "new, second orbit with the rung-3 word" : "new") : o.firstAtMass ? "known word, not catalogued at this mass" : "catalogued"}`);
       b.addEventListener("click", () => select(o));
       box.appendChild(b);
       requestAnimationFrame(() => thumb(b.querySelector("canvas"), o));
     }
     $("ladderNote").textContent = `m₃ = ${mass}`;
     const nNew = list.filter((o) => o.status === "new").length;
-    const foot = { 0.1: "Rung 2 here came out of the m₃ = 0.1 grid search; its word is catalogued at m₃ = 0.5.", 0.15: "Rung 3 came out of the grid search at this mass; the others were followed here from m₃ = 0.25 and land on orbits the grid also found.", 0.2: "Rung 3 came out of the grid search at this mass; the others were followed here from m₃ = 0.25.", 0.3: "Rungs 3, 4 and 5 came out of the grid search at this mass; rungs 1 and 2 were followed here from m₃ = 0.25.", 0.25: "The first mass we searched. Rungs climb with an almost constant step of 9.0 in period. 3′ is a second, far less stable orbit with the rung-3 word.", 0.5: "A mass in the 2018 catalogue, which lists rungs 1 and 2 only.", 0.75: "Rung 1 here matches the catalogue to all 10 published digits. Rung 2 is not listed at this mass." }[mass] || "";
-    $("ladderFoot").textContent = `${list.length} rungs, ${nNew} new. ${foot}`;
+    const foot = { 0.1: "Rung 2 here came out of the m₃ = 0.1 grid search; its word is catalogued at m₃ = 0.5.", 0.15: "Rung 3 came out of the grid search at this mass. Rungs 1 and 2 were followed here from m₃ = 0.25 and land on orbits the grid also found; rung 4 was followed here and the grid missed it.", 0.2: "Rung 3 came out of the grid search at this mass; the others were followed here from m₃ = 0.25.", 0.3: "Rungs 3, 4 and 5 came out of the grid search at this mass; rungs 1 and 2 were followed here from m₃ = 0.25.", 0.25: "The first mass we searched. Rungs climb with an almost constant step of 9.0 in period. 3′ is a second, far less stable orbit with the rung-3 word.", 0.5: "A mass in the 2018 catalogue, which lists rungs 1 and 2 only.", 0.75: "Rung 1 here matches the catalogue's velocities to every published digit and its period to one unit in the tenth decimal. Rung 2 is not listed at this mass.", 1: "Equal masses: rung 1 here is Li & Liao's I.A i.c. 3, matched to nine significant digits." }[mass] || "";
+    const nR = list.filter((o) => !o.extra).length, hasX = list.some((o) => o.extra);
+    $("ladderFoot").textContent = `${nR} rung${nR === 1 ? "" : "s"}${hasX ? " and 3′" : ""}, ${nNew} new. ${foot}`;
   }
   function renderMassSeg() {
     const seg = $("massSeg"); seg.textContent = "";
@@ -596,9 +622,8 @@
       const o = ORB[id], el = document.createElement("div");
       el.className = "mult"; el.dataset.status = o.status;
       const w = o.spell.map((s) => s[1]).join("");
-      el.innerHTML = `<canvas role="img" aria-label="Rung ${o.k} at m3 = 0.5"></canvas><div class="cap"><b>k = ${o.k}</b><span class="chip ${o.status === "new" ? "new" : ""}">${o.status === "new" ? "new" : "catalogued"}</span></div><div class="cap"><span class="mono">T = ${fmt(o.T, 2)}</span><span class="mono">T* = ${fmt(o.Tstar, 2)}</span></div><div class="w">(Ba)<sup>${o.k + 1}</sup>(bA)<sup>${o.k + 1}</sup> · ${o.k} turn${o.k === 1 ? "" : "s"}</div>`;
-      el.querySelector("canvas").addEventListener("click", () => goTo(o));
-      el.querySelector("canvas").style.cursor = "pointer";
+      el.innerHTML = `<button type="button" class="mult-btn" aria-label="Open rung ${o.k} at m3 = 0.5 above"><canvas aria-hidden="true"></canvas></button><div class="cap"><b>k = ${o.k}</b><span class="chip ${o.status === "new" ? "new" : ""}">${o.status === "new" ? "new" : "catalogued"}</span></div><div class="cap"><span class="mono">T = ${fmt(o.T, 2)}</span><span class="mono">T* = ${fmt(o.Tstar, 2)}</span></div><div class="w">(Ba)<sup>${o.k + 1}</sup>(bA)<sup>${o.k + 1}</sup> · ${o.k} turn${o.k === 1 ? "" : "s"}</div>`;
+      el.querySelector(".mult-btn").addEventListener("click", () => goTo(o));
       box.appendChild(el);
       mults.push({ o, cv: el.querySelector("canvas"), cache: null, w });
     }
@@ -713,7 +738,12 @@
         el("circle", { cx: x, cy: y, r: 9, fill: o.extra ? C.pink : C.neu, "fill-opacity": 0.16 }, g);
         el("circle", { cx: x, cy: y, r: 4.2, fill: o.extra ? C.pink : C.neu }, g);
       } else el("circle", { cx: x, cy: y, r: 4.2, fill: "#070b18", stroke: C.known, "stroke-width": 1.6 }, g);
-      const show = (e) => { tip.hidden = false; tip.innerHTML = `rung ${o.label} · m₃ ${o.m3}<br><span class="k">T*</span> ${fmt(o.Tstar, 3)} <span class="k">T</span> ${fmt(o.T, 3)}<br><span class="k">${o.status === "new" ? "new" : o.match || "catalogued"}</span>`; tip.style.left = e.clientX + "px"; tip.style.top = e.clientY + "px"; };
+      const show = (e) => {
+        tip.hidden = false; tip.innerHTML = `rung ${o.label} · m₃ ${o.m3}<br><span class="k">T*</span> ${fmt(o.Tstar, 3)} <span class="k">T</span> ${fmt(o.T, 3)}<br><span class="k">${o.status === "new" ? "new" : o.match || "catalogued"}</span>`;
+        tip.style.left = e.clientX + "px"; tip.style.top = e.clientY + "px";
+        const r = tip.getBoundingClientRect();
+        tip.style.transform = e.clientX + 12 + r.width > innerWidth - 8 ? "translate(calc(-100% - 12px), -50%)" : "";
+      };
       g.addEventListener("pointermove", show); g.addEventListener("pointerleave", () => (tip.hidden = true));
       g.addEventListener("click", () => { tip.hidden = true; goTo(o); });
       g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goTo(o); } });
@@ -727,6 +757,10 @@
     $("familyChart").appendChild(svg);
   }
 
+  function keyClick(node, fn) {
+    node.addEventListener("click", fn);
+    node.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); } });
+  }
   /* ---------------- stability chart ---------------- */
   function stabChart() {
     const W = 960, H = 380, m = { l: 60, r: 130, t: 18, b: 48 };
@@ -744,8 +778,8 @@
       if (!pts.length) continue;
       if (pts.length > 1) el("path", { d: pts.map((o, i) => `${i ? "L" : "M"}${X(o.k).toFixed(1)},${Y(o.maxMult).toFixed(1)}`).join(""), fill: "none", stroke: col, "stroke-width": 1.6, "stroke-opacity": 0.85 }, svg);
       for (const o of pts) {
-        const c = el("circle", { cx: X(o.k), cy: Y(o.maxMult), r: 4, fill: o.status === "new" ? col : "#070b18", stroke: col, "stroke-width": 1.6, class: "pt" }, svg);
-        c.addEventListener("click", () => goTo(o));
+        const c = el("circle", { cx: X(o.k), cy: Y(o.maxMult), r: 4, fill: o.status === "new" ? col : "#070b18", stroke: col, "stroke-width": 1.6, class: "pt", tabindex: 0, role: "button", "aria-label": `Rung ${o.label} at m3 = ${o.m3}, growth ×${fmt(o.maxMult, 1)} per period` }, svg);
+        keyClick(c, () => goTo(o));
         el("title", {}, c, `rung ${o.k}, m3 = ${o.m3}: ×${fmt(o.maxMult, 1)} per period`);
       }
       const lastP = pts[pts.length - 1];
@@ -753,8 +787,8 @@
     }
     const x3 = ORB["X3@0.25"];
     if (x3 && x3.maxMult) {
-      const c = el("circle", { cx: X(3), cy: Y(x3.maxMult), r: 4.5, fill: C.pink, class: "pt" }, svg);
-      c.addEventListener("click", () => goTo(x3));
+      const c = el("circle", { cx: X(3), cy: Y(x3.maxMult), r: 4.5, fill: C.pink, class: "pt", tabindex: 0, role: "button", "aria-label": `Orbit 3′ at m3 = 0.25, growth ×${fmt(x3.maxMult, 1)} per period` }, svg);
+        keyClick(c, () => goTo(x3));
       el("text", { x: X(3) + 10, y: Y(x3.maxMult) + 4, fill: C.pink, "font-size": 12 }, svg, `3′ (×${Math.round(x3.maxMult)})`);
     }
     $("stabChart").appendChild(svg);
@@ -834,7 +868,7 @@
       for (const q of mapMarkers()) { const dd = Math.hypot((q.v1 / M.vmax - fx) * r.width, ((1 - q.v2 / M.vmax) - fy) * r.height); if (dd < bd) { bd = dd; best = q; } }
       return { v1, v2, fx, fy, best, M, d, r };
     };
-    box.addEventListener("pointermove", (e) => {
+    const readAt = (e) => {
       const { v1, v2, fx, fy, best, M, d, r } = at(e);
       hoverMarker = best;
       renderMapOver(fx * r.width * d, fy * r.height * d);
@@ -854,7 +888,9 @@
       }
       ro.innerHTML = html;
       box.style.cursor = best && best.orbit ? "pointer" : "crosshair";
-    });
+    };
+    box.addEventListener("pointermove", readAt);
+    box.addEventListener("pointerdown", readAt);
     box.addEventListener("pointerleave", () => { hoverMarker = null; renderMapOver(); });
     box.addEventListener("click", (e) => { const { best } = at(e); if (best && best.orbit) goTo(best.orbit); });
   }
@@ -872,9 +908,11 @@
     $("stScanD").textContent = `starting conditions integrated across ${words[nm] || nm} masses, 800 × 800 launch velocities each`;
     $("nBranches").textContent = D.branches.length + " branches";
     $("nCand").textContent = nf(cand) + " near-returns";
-    $("nRef").textContent = nf(jobs) + " refined";
+    const conv = sw.reduce((s, q) => s + (q.converged || 0), 0);
+    $("nRef").textContent = `${nf(jobs)} tries, ${nf(conv)} closed`;
     $("nDistinct").textContent = nf(distinct) + " distinct orbits";
-    $("nNew").textContent = nf(unc) + " not catalogued";
+    const uncL = sw.reduce((s, q) => s + q.orbits.filter((o) => !o.known && o.ladder).length, 0);
+    $("nNew").textContent = `${nf(unc)} not catalogued (${nf(uncL)} rungs)`;
     const neu = D.orbits.filter((o) => o.status === "new");
     $("stNewOrbits").textContent = neu.length;
     $("stNewWords").textContent = new Set(neu.map((o) => o.canon)).size;
@@ -891,8 +929,8 @@
   function compactWord(o) { return `(Ba)<sup>${o.k + 1}</sup>(bA)<sup>${o.k + 1}</sup>`; }
   function fillTable() {
     const rows = D.orbits.slice().sort((a, b) => a.m3 - b.m3 || a.k - b.k || (a.extra ? 1 : -1));
-    const head = "<tr><th>Rung</th><th>m₃</th><th>Status</th><th>v₁</th><th>v₂</th><th>T</th><th>T*</th><th>Word</th><th>Growth</th><th>Closure</th><th></th></tr>";
-    const body = rows.map((o) => `<tr data-id="${o.id}"><td>${o.label}</td><td>${o.m3}</td><td class="${o.status === "new" ? "ok" : ""}">${o.status === "new" ? "new" : o.firstAtMass ? "known word" : "catalogued"}</td><td>${o.v1.toFixed(10)}</td><td>${o.v2.toFixed(10)}</td><td>${o.T.toFixed(8)}</td><td>${o.Tstar.toFixed(4)}</td><td class="w">${compactWord(o)}</td><td>${o.maxMult ? "×" + fmt(o.maxMult, 1) : "—"}</td><td class="cl">—</td><td><button type="button" data-act="check">Check</button> <button type="button" data-act="copy">Copy</button> <button type="button" data-act="view">View</button></td></tr>`).join("");
+    const head = "<tr><th>Rung</th><th></th><th>m₃</th><th>Status</th><th>v₁</th><th>v₂</th><th>T</th><th>T*</th><th>Word</th><th>Growth</th><th>Closure</th></tr>";
+    const body = rows.map((o) => `<tr data-id="${o.id}"><td>${o.label}</td><td><button type="button" data-act="check">Check</button> <button type="button" data-act="copy">Copy</button> <button type="button" data-act="view">View</button></td><td>${o.m3}</td><td class="${o.status === "new" ? "ok" : ""}">${o.status === "new" ? "new" : o.firstAtMass ? "known word" : "catalogued"}</td><td>${o.v1.toFixed(10)}</td><td>${o.v2.toFixed(10)}</td><td>${o.T.toFixed(8)}</td><td>${o.Tstar.toFixed(4)}</td><td class="w">${compactWord(o)}</td><td>${o.maxMult ? "×" + fmt(o.maxMult, 1) : "—"}</td><td class="cl">—</td></tr>`).join("");
     $("icTable").innerHTML = `<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
     $("icTable").addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
@@ -912,9 +950,11 @@
     });
   }
   function fallbackCopy(s, done) {
-    const ta = document.createElement("textarea"); ta.value = s; document.body.appendChild(ta); ta.select();
-    try { document.execCommand("copy"); done(); } catch (e) { toast("Select the text and copy it: " + s); }
+    const ta = document.createElement("textarea"); ta.value = s; ta.style.cssText = "position:fixed;opacity:0;top:0;left:0"; document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
     ta.remove();
+    ok ? done() : toast("Copying is blocked here. The values: " + s, 9000);
   }
   function closure(o) { // re-integrate with the Observatory solver and measure |Y(T) - Y(0)|
     const m = [1, 1, o.m3], x = [-1, 0, 0, 1, 0, 0, 0, 0, 0], v = [o.v1, o.v2, 0, o.v1, o.v2, 0, (-2 * o.v1) / o.m3, (-2 * o.v2) / o.m3, 0];
@@ -926,7 +966,7 @@
     return Math.sqrt(s);
   }
   let toastTimer = 0;
-  function toast(s) { const t = $("toast"); t.textContent = s; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2200); }
+  function toast(s, ms) { const t = $("toast"); t.textContent = s; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), ms || 2200); }
 
   /* ---------------- loop ---------------- */
   const vis = { stage: true, mult: false, finger: false };
@@ -954,7 +994,7 @@
   let wasNarrow = isNarrow();
   addEventListener("resize", () => {
     clearTimeout(layout.t);
-    layout.t = setTimeout(() => { layout(); if (isNarrow() !== wasNarrow) { wasNarrow = isNarrow(); renderRail(); } }, 120);
+    layout.t = setTimeout(() => { measureBands(); layout(); if (isNarrow() !== wasNarrow) { wasNarrow = isNarrow(); renderRail(); revealRung(); } }, 120);
   });
 
   renderMassSeg(); renderRail(); fillNumbers(); fillVerdicts(); fillTable();
@@ -964,5 +1004,5 @@
   if (REDUCED) phase = 0.62;
   renderMults();
   requestAnimationFrame(frame);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { renderHero(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { spinCache = null; measureBands(); renderGhost(); renderHero(); if (MAPS.length) renderMapOver(); });
 })();

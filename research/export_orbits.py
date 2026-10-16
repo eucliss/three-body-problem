@@ -24,6 +24,11 @@ for o in sorted(D["orbits"], key=lambda o: (o["m3"], o["k"], o.get("extra", Fals
         "closure_this_code": o["closure"], "closure_independent": checks.get(o["id"]),
         "max_floquet_multiplier": o.get("maxMult"),
     })
+# 3' (X3@0.25) crosses the slice again at half period at scale 0.8905: the same orbit from a second start
+for r in rows:
+    if r["id"] == "X3@0.25":
+        r["alternate_start"] = {"v1": 0.15864128667707, "v2": 0.10037530718944, "T": 20.768761004888,
+                                "note": "same orbit, reached at T/2 rescaled by 0.890466; count once"}
 out = {"description": "Periodic orbits of the ladder family (Ba)^(k+1)(bA)^(k+1) in the isosceles slice m1 = m2 = 1, r1 = (-1,0), r2 = (1,0), r3 = (0,0), v1 = v2 = (v1, v2), v3 = -2 (v1, v2)/m3, G = 1. T* = T |E|^(3/2).",
        "orbits": rows}
 json.dump(out, open(os.path.join(here, "data/ladder_orbits.json"), "w"), indent=1)

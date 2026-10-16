@@ -36,3 +36,8 @@ fs.mkdirSync(path.join(__dirname, "dist"), { recursive: true });
 const out = path.join(__dirname, "dist/ladder.html");
 fs.writeFileSync(out, page);
 console.log(out, (page.length / 1024).toFixed(0) + " KB");
+// ladder.html is a body fragment for the artifact host, which adds the document head; this copy opens
+// directly in a browser
+const standalone = path.join(__dirname, "dist/ladder.standalone.html");
+fs.writeFileSync(standalone, `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>\n</head>\n<body>\n${page}\n</body>\n</html>\n`);
+console.log(standalone);

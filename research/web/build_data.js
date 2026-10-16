@@ -156,6 +156,7 @@ for (const f of fs.readdirSync(path.join(R, "runs")).filter((f) => /^m\d+_N800_T
   const log = fs.existsSync(path.join(R, "runs/" + f.replace("_orbits.jsonl", ".log"))) ? fs.readFileSync(path.join(R, "runs/" + f.replace("_orbits.jsonl", ".log")), "utf8") : "";
   const last = (re) => { const all = [...log.matchAll(re)]; return all.length ? all[all.length - 1][1] : null; };
   const cand = last(/(\d+) candidate rows/g), jobs = last(/(\d+) refinement jobs/g); // logs can hold reruns: use the last
+  const converged = last(/done: \d+ jobs, (\d+) converged/g);
   // drop repeated traversals (u^k found at k T): keep primitive orbits only
   const prim = rows.filter((o) => {
     if (o.power === 1) return true;
@@ -163,7 +164,7 @@ for (const f of fs.readdirSync(path.join(R, "runs")).filter((f) => /^m\d+_N800_T
     return !(r && Math.hypot(...r) < 1e-7);
   });
   const ladderWords = new Set(orbits.map((o) => o.canon));
-  sweeps.push({ m3, candidates: cand ? +cand : null, jobs: jobs ? +jobs : null,
+  sweeps.push({ m3, candidates: cand ? +cand : null, jobs: jobs ? +jobs : null, converged: converged ? +converged : null,
     orbits: prim.map((o) => ({ v1: +o.v1.toFixed(6), v2: +o.v2.toFixed(6), T: +o.T.toFixed(4), Ts: +o.Tstar.toFixed(3), Lf: o.Lf, known: o.known, ladder: ladderWords.has(o.canon), canon: o.canon, match: o.matches[0] || null, minSep: +o.minSep.toPrecision(3), power: o.power })) });
   console.log(`sweep m3=${m3}: ${rows.length} orbits, ${prim.length} primitive, ${prim.filter((o) => !o.known).length} not in catalogue`);
 }
@@ -171,7 +172,7 @@ for (const f of fs.readdirSync(path.join(R, "runs")).filter((f) => /^m\d+_N800_T
 /* ---------- return-distance maps ---------- */
 const maps = [];
 for (const f of ["runs/map_m025_N400.json", "runs/map_m05_N400.json"]) {
-  if (!fs.existsSync(path.join(R, f))) continue;
+  if (!fs.existsSync(path.join(R, f))) { console.warn(`missing ${f} (run map.js); the page will have no map for it`); continue; }
   const M = readJSON(f), N = M.N;
   const d = new Uint8Array(N * N), T = new Uint8Array(N * N);
   for (let i = 0; i < N * N; i++) {

@@ -1,5 +1,6 @@
 /* Parse the numeric tables (v1, v2, T, T*, Lf) of the Li–Liao "pictures" catalogue files.
- * Usage: node catalog_numeric.js <liao-repo-dir> out.json */
+ * Usage: node catalog_numeric.js <liao-repo-dir> out.json
+ * Catalogue source: https://github.com/sjtu-liao/three-body at commit b96b019 (2026-02-15). */
 "use strict";
 const fs = require("fs"), path = require("path");
 const [dir, out] = process.argv.slice(2);

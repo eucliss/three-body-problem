@@ -1,6 +1,7 @@
 /* Build an index of every published free-group word (canonical form, up to cyclic rotation and
  * inversion) from the Li & Liao catalogue markdown files, plus the Šuvakov–Dmitrašinović list.
- * Usage: node catalog.js <liao-repo-dir> out.json */
+ * Usage: node catalog.js <liao-repo-dir> out.json
+ * Catalogue source: https://github.com/sjtu-liao/three-body at commit b96b019 (2026-02-15). */
 "use strict";
 const fs = require("fs"), path = require("path");
 const T = require("./topology.js");

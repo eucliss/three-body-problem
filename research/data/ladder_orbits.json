@@ -106,20 +106,20 @@
    "m3": 0.15,
    "k": 3,
    "label": "3",
-   "v1": 0.10104861521080659,
-   "v2": 0.06490520172684244,
-   "T": 25.499737692947413,
-   "E": -0.5932630541897927,
-   "Tstar": 11.652166128428375,
+   "v1": 0.10104861521081045,
+   "v2": 0.06490520172683714,
+   "T": 25.49973769294868,
+   "E": -0.5932630541897914,
+   "Tstar": 11.652166128428915,
    "word": "ABaBaBaBabAbAbAb",
    "word_compact": "(Ba)^4(bA)^4",
    "letters": 16,
    "status": "new",
    "note": "new (grid search, same family)",
    "match": null,
-   "closure_this_code": 7.515134395847458e-10,
-   "closure_independent": 5.208583217508611e-11,
-   "max_floquet_multiplier": 31.484596857512113
+   "closure_this_code": 8.250484220064245e-10,
+   "closure_independent": 5.667532068653891e-11,
+   "max_floquet_multiplier": 31.484603039612644
   },
   {
    "id": "L4@0.15",
@@ -206,20 +206,20 @@
    "m3": 0.2,
    "k": 4,
    "label": "4",
-   "v1": 0.14451043175688183,
-   "v2": 0.08462918696937594,
-   "T": 34.71762302108679,
-   "E": -0.5915009940897622,
-   "Tstar": 15.793675161650786,
+   "v1": 0.144510431756998,
+   "v2": 0.08462918696940684,
+   "T": 34.71762302118939,
+   "E": -0.5915009940893352,
+   "Tstar": 15.793675161680358,
    "word": "ABaBaBaBaBabAbAbAbAb",
    "word_compact": "(Ba)^5(bA)^5",
    "letters": 20,
    "status": "new",
    "note": "new (continuation from m3 = 0.25)",
    "match": null,
-   "closure_this_code": 1.8946331272461972e-09,
-   "closure_independent": 4.791082391930601e-10,
-   "max_floquet_multiplier": 36.42131586731764
+   "closure_this_code": 1.1981496086128863e-09,
+   "closure_independent": 1.510366033630195e-10,
+   "max_floquet_multiplier": 36.421368782429596
   },
   {
    "id": "L1@0.25",
@@ -299,7 +299,13 @@
    "match": null,
    "closure_this_code": 6.983871396480809e-09,
    "closure_independent": 1.3e-09,
-   "max_floquet_multiplier": 1218.8226124059033
+   "max_floquet_multiplier": 1218.8226124059033,
+   "alternate_start": {
+    "v1": 0.15864128667707,
+    "v2": 0.10037530718944,
+    "T": 20.768761004888,
+    "note": "same orbit, reached at T/2 rescaled by 0.890466; count once"
+   }
   },
   {
    "id": "L4@0.25",
