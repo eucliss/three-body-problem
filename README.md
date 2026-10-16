@@ -2,7 +2,7 @@
 
 The general equation for three (or N) gravitating bodies, a solver that integrates it to about twelve significant digits, and an interactive page that shows it working.
 
-**Try it:** open [`web/dist/index.html`](web/dist/index.html) in a browser. It is one self-contained file: the solver, the equations and the fate-map data are all inside it.
+**Try it:** [live page](https://claude.ai/artifact/LK3dio2XDdDQX8LUewuca7), or open [`web/dist/index.html`](web/dist/index.html) in a browser. It is one self-contained file: the solver, the equations and the fate-map data are all inside it.
 
 ## Layout
 
