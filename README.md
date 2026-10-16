@@ -1,6 +1,21 @@
 # The three-body problem
 
-The general equation for three (or N) gravitating bodies, a solver that integrates it to about twelve significant digits, and an interactive page that shows it working. This folder is self-contained and unrelated to the rest of the repository.
+The general equation for three (or N) gravitating bodies, a solver that integrates it to about twelve significant digits, and an interactive page that shows it working.
+
+**Try it:** open [`web/dist/index.html`](web/dist/index.html) in a browser. It is one self-contained file: the solver, the equations and the fate-map data are all inside it.
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| `threebody/` | Python package: equations, the regularized solver, exact solutions and presets, outcome analysis |
+| `tests/` | 21 validation tests (`python -m pytest -q tests`) |
+| `scripts/` | figure and animation rendering, Newton refinement of periodic orbits |
+| `data/periodic_orbits.json` | the refined periodic orbits |
+| `figures/` | validation figure and an animation of Burrau's problem |
+| `web/solver.js` | the same solver in JavaScript, bit-identical across browsers |
+| `web/src/` | page source; `web/build.js` assembles `web/dist/index.html` |
+| `web/build_fatemap.js`, `web/fatemap.json` | fate-map computation and its data |
 
 ![Validation overview](figures/overview.png)
 
@@ -116,7 +131,7 @@ At the instant of a very close pericentre, T and U are both huge, so even an exa
 
 ```bash
 # Python: tests, figures, periodic-orbit refinement
-pip install numpy scipy matplotlib pytest
+pip install -r requirements.txt
 python -m pytest -q tests
 python scripts/make_figures.py
 python scripts/make_animation.py     # needs ffmpeg
