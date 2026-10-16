@@ -301,9 +301,9 @@
    "closure_independent": 1.3e-09,
    "max_floquet_multiplier": 1218.8226124059033,
    "alternate_start": {
-    "v1": 0.15864128667707,
-    "v2": 0.10037530718944,
-    "T": 20.768761004888,
+    "v1": 0.15864128667707048,
+    "v2": 0.10037530718943394,
+    "T": 20.768761004887477,
     "note": "same orbit, reached at T/2 rescaled by 0.890466; count once"
    }
   },

@@ -272,7 +272,9 @@ footer { max-width: 1180px; margin: 96px auto 0; padding-top: 18px; border-top: 
   .hud-br { display: none; }
   .wordbar { grid-template-columns: minmax(0, 1fr); padding: 12px 16px; }
   .multiples { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .chart text, .chart .ttl { font-size: 17px; }
+  .chart text { font-size: 17px; }
+  .chart .ttl { display: none; }
+  .chart text.note { font-size: 13px; }
   .finger { grid-template-columns: minmax(0, 1fr); }
   .letters { grid-template-columns: minmax(0, 1fr); }
   .stats { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -359,7 +361,7 @@ footer { max-width: 1180px; margin: 96px auto 0; padding-top: 18px; border-top: 
       <div class="body">
         <h2>Each rung adds one turn</h2>
         <p>All five orbits below start from the same kind of position: the two heavy stars at ±1 on a line, the light star exactly between them, everything moving with zero total momentum and zero total spin. Only the launch velocity differs.</p>
-        <p>The motion is the same story on every rung of the main family. The light star swings out on a long loop to one side while the heavy pair winds around each other <strong>k times</strong>. Exactly half a period later the light star falls back through the middle, the three stars line up as they started (mirrored), and the light star swings out to the other side while the pair unwinds the same k turns. Because the total spin is zero, the pair's winding is always balanced by the light star's swing. Each rung up the ladder adds one more turn in each direction. (The count holds to within 0.03 turns for m₃ ≤ 0.5; near equal masses rung 1 overshoots to about 1.3 turns. The second rung-3 orbit, 3′, winds only twice.)</p>
+        <p>The motion is the same story on every rung of the main family. The light star swings out on a long loop to one side while the heavy pair winds around each other <strong>k times</strong>. Exactly half a period later the light star falls back through the middle, the three stars line up as they started (mirrored), and the light star swings out to the other side while the pair unwinds the same k turns. Because the total spin is zero, the pair's winding is always balanced by the light star's swing. Each rung up the ladder adds one more turn in each direction. (The count holds to within 0.04 turns for m₃ ≤ 0.5; near equal masses rung 1 overshoots to about 1.3 turns. The second rung-3 orbit, 3′, winds only twice.)</p>
         <figure>
           <div class="multiples" id="multiples"></div>
           <figcaption>Rungs <b>k = 1 to 5</b> at m₃ = 0.5, played so that each finishes its period at the same moment. Rungs 1 and 2 are in Li, Jing &amp; Liao's 2018 catalogue as I.A i.c. 2 and i.c. 3. Rungs 3, 4 and 5 are not, although they lie inside the range that survey searched. Click any panel to open it above.</figcaption>
@@ -475,7 +477,7 @@ footer { max-width: 1180px; margin: 96px auto 0; padding-top: 18px; border-top: 
         <h2>What this does and does not show</h2>
         <ul class="limits">
           <li><strong>New here means</strong> absent from the catalogues of Šuvakov &amp; Dmitrašinović (2013), Li &amp; Liao (2017; 695 equal-mass families), Li, Jing &amp; Liao (2018; 1,349 unequal-mass orbits) and Li &amp; Liao (2019; 316 free-fall orbits), checked by word under every physical symmetry and by starting values. No wider literature search was possible here, and we could not open the Sofia group's equal-mass databases (Hristov, Hristova and coauthors, 2022–2026). If the higher rungs continue all the way to equal masses, some of these words may already be listed there.</li>
-          <li><strong>What we counted.</strong> The 23 new orbits are those whose words are new (rungs 3 to 11). Rungs 1 and 2 at m₃ = 0.1 to 0.3, and rung 2 at m₃ = 0.75, are not catalogued at those masses but carry known words, so we do not count them. The grid scans at m₃ = 0.2 and 0.25 also found two orbits whose word is the square of rung 1's; we did not send them for review and do not count them either.</li>
+          <li><strong>What we counted.</strong> The 23 new orbits are those whose words are new (rungs 3 to 11). Rung 2 at m₃ = 0.1, rungs 1 and 2 at m₃ = 0.15 to 0.3, and rung 2 at m₃ = 0.75 are not catalogued at those masses but carry known words, so we do not count them. The grid scans at m₃ = 0.2 and 0.25 also found two orbits whose word is the square of rung 1's; we did not send them for review and do not count them either.</li>
           <li><strong>The orbits are numerical.</strong> Each closes to between 10<sup>−11</sup> and 8×10<sup>−9</sup> in 64-bit arithmetic, confirmed by an independent integrator. That is strong evidence, but not a computer-assisted proof.</li>
           <li><strong>The curve ends are not family ends.</strong> Our continuation stops where the Newton step no longer converges to our acceptance threshold. We have not determined why; the orbits there are less unstable than others we refined. The branches may continue further.</li>
           <li><strong>Only one plane of starting conditions.</strong> We searched the standard isosceles slice with zero angular momentum and two equal masses. Orbits with spin, three different masses, or motion in three dimensions are outside this search.</li>

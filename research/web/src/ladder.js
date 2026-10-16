@@ -469,16 +469,20 @@
       for (let i = 0; i < cur.N; i++) i ? g.lineTo(X(cur.ts[i]), Y(cur.TH[i])) : g.moveTo(X(cur.ts[i]), Y(cur.TH[i]));
       g.strokeStyle = "rgba(170,184,255,0.85)"; g.lineWidth = 1.4 * d; g.stroke();
       g.font = `500 ${Math.round(10 * d)}px "IBM Plex Mono", monospace`; g.textAlign = "center"; g.textBaseline = "alphabetic";
-      const seen = new Map(), pairGap = (w - padL - padR) / Math.max(1, cur.spell.length / 2), every = pairGap < 16 * d ? Math.ceil((16 * d) / pairGap) : 1;
-      let pairIdx = -1;
+      // group letters written at the same moment, clamp to the canvas, then keep labels from the right
+      // with at least a pair's width between them so none overlap
+      const groups = [];
       for (const [ts, ch] of cur.spell) {
-        const n = seen.get(ts) || 0; seen.set(ts, n + 1);
-        if (n === 0) pairIdx++;
-        if (pairIdx % every) continue;
-        g.fillStyle = ch === ch.toUpperCase() ? "rgba(205,210,223,0.75)" : "rgba(149,157,180,0.75)";
-        const x0 = Math.min(w - 13 * d, Math.max(5 * d, X(ts)));
-        g.fillText(ch, x0 + (n ? 7 * d : 0), h - 4 * d);
+        const last = groups[groups.length - 1];
+        if (last && last.t === ts) last.s += ch; else groups.push({ t: ts, s: ch });
       }
+      for (const gr of groups) gr.x = Math.min(w - 13 * d, Math.max(5 * d, X(gr.t)));
+      const kept = [];
+      for (let i = groups.length - 1; i >= 0; i--) if (!kept.length || kept[0].x - groups[i].x >= 18 * d) kept.unshift(groups[i]);
+      for (const gr of kept) [...gr.s].forEach((ch, n) => {
+        g.fillStyle = ch === ch.toUpperCase() ? "rgba(205,210,223,0.75)" : "rgba(149,157,180,0.75)";
+        g.fillText(ch, gr.x + n * 7 * d, h - 4 * d);
+      });
       g.fillStyle = "rgba(149,157,180,0.7)"; g.textAlign = "left";
       g.fillText(`${Math.round(cur.turnsMax)} turn${Math.round(cur.turnsMax) === 1 ? "" : "s"}`, padL + 2 * d, top + 9 * d);
       g.fillText("0", padL + 2 * d, Y(0) - 3 * d);
@@ -742,7 +746,10 @@
         tip.hidden = false; tip.innerHTML = `rung ${o.label} · m₃ ${o.m3}<br><span class="k">T*</span> ${fmt(o.Tstar, 3)} <span class="k">T</span> ${fmt(o.T, 3)}<br><span class="k">${o.status === "new" ? "new" : o.match || "catalogued"}</span>`;
         tip.style.left = e.clientX + "px"; tip.style.top = e.clientY + "px";
         const r = tip.getBoundingClientRect();
-        tip.style.transform = e.clientX + 12 + r.width > innerWidth - 8 ? "translate(calc(-100% - 12px), -50%)" : "";
+        let left = e.clientX + 12;
+        if (left + r.width > innerWidth - 8) left = e.clientX - 12 - r.width;
+        tip.style.left = Math.max(8, Math.min(innerWidth - r.width - 8, left)) + "px";
+        tip.style.transform = "translateY(-50%)";
       };
       g.addEventListener("pointermove", show); g.addEventListener("pointerleave", () => (tip.hidden = true));
       g.addEventListener("click", () => { tip.hidden = true; goTo(o); });
@@ -751,7 +758,7 @@
     const a1 = ORB["L1@1"];
     if (a1) {
       el("line", { x1: X(1) - 3, y1: Y(a1.Tstar) + 6, x2: X(1) - 14, y2: Y(a1.Tstar) + 62, stroke: C.muted, "stroke-width": 1 }, svg);
-      el("text", { x: X(1) - 16, y: Y(a1.Tstar) + 76, "text-anchor": "end", fill: C.soft, "font-size": 11 }, svg, "rung 1 here is Li & Liao's I.A i.c. 3");
+      el("text", { x: X(1) - 16, y: Y(a1.Tstar) + 76, "text-anchor": "end", fill: C.soft, "font-size": 11, class: "note" }, svg, "= Li & Liao I.A i.c. 3");
     }
     el("text", { x: X(0.25), y: Y(Y1) + 12, "text-anchor": "middle", fill: C.neu, "font-size": 10 }, svg, "searched");
     $("familyChart").appendChild(svg);
@@ -929,8 +936,8 @@
   function compactWord(o) { return `(Ba)<sup>${o.k + 1}</sup>(bA)<sup>${o.k + 1}</sup>`; }
   function fillTable() {
     const rows = D.orbits.slice().sort((a, b) => a.m3 - b.m3 || a.k - b.k || (a.extra ? 1 : -1));
-    const head = "<tr><th>Rung</th><th></th><th>m₃</th><th>Status</th><th>v₁</th><th>v₂</th><th>T</th><th>T*</th><th>Word</th><th>Growth</th><th>Closure</th></tr>";
-    const body = rows.map((o) => `<tr data-id="${o.id}"><td>${o.label}</td><td><button type="button" data-act="check">Check</button> <button type="button" data-act="copy">Copy</button> <button type="button" data-act="view">View</button></td><td>${o.m3}</td><td class="${o.status === "new" ? "ok" : ""}">${o.status === "new" ? "new" : o.firstAtMass ? "known word" : "catalogued"}</td><td>${o.v1.toFixed(10)}</td><td>${o.v2.toFixed(10)}</td><td>${o.T.toFixed(8)}</td><td>${o.Tstar.toFixed(4)}</td><td class="w">${compactWord(o)}</td><td>${o.maxMult ? "×" + fmt(o.maxMult, 1) : "—"}</td><td class="cl">—</td></tr>`).join("");
+    const head = "<tr><th>Rung</th><th></th><th>Closure</th><th>m₃</th><th>Status</th><th>v₁</th><th>v₂</th><th>T</th><th>T*</th><th>Word</th><th>Growth</th></tr>";
+    const body = rows.map((o) => `<tr data-id="${o.id}"><td>${o.label}</td><td><button type="button" data-act="check">Check</button> <button type="button" data-act="copy">Copy</button> <button type="button" data-act="view">View</button></td><td class="cl">—</td><td>${o.m3}</td><td class="${o.status === "new" ? "ok" : ""}">${o.status === "new" ? "new" : o.firstAtMass ? "known word" : "catalogued"}</td><td>${o.v1.toFixed(10)}</td><td>${o.v2.toFixed(10)}</td><td>${o.T.toFixed(8)}</td><td>${o.Tstar.toFixed(4)}</td><td class="w">${compactWord(o)}</td><td>${o.maxMult ? "×" + fmt(o.maxMult, 1) : "—"}</td></tr>`).join("");
     $("icTable").innerHTML = `<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
     $("icTable").addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
