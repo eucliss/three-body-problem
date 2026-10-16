@@ -1,0 +1,497 @@
+<title>The Three-Body Ladder</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="A new family of periodic three-body orbits: two equal stars and a lighter third, where on rung k the two heavy stars wind around each other k times, then unwind. Found by a systematic search of 3.5 million initial conditions.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: an observatory plate. A full-bleed sky stage beside a literal ladder of rungs, then a
+   reading column interleaved with wide figure plates. Deliberately single-theme: the night sky. */
+:root {
+  color-scheme: dark;
+  --void: #03050c;
+  --sky: #060a16;
+  --panel: #0a0f1f;
+  --raise: #111a31;
+  --line: #172038;
+  --line-strong: #26314f;
+  --ink: #ecebe6;
+  --soft: #cdd2df;
+  --muted: #959db4;
+  --faint: #5c6582;
+  --accent: #aab8ff;       /* interactive: the Observatory's periwinkle */
+  --accent-ink: #0b1020;
+  --new: #8ef0cf;          /* status: a rung nobody had published */
+  --new-dim: rgba(142, 240, 207, 0.14);
+  --known: #8590ad;        /* status: already in the catalogues */
+  --b1: #c2841a; --b2: #3a91d4; --b3: #de5577;
+  --g1: #f6c66a; --g2: #8fd0ff; --g3: #ff9bb3;
+  --crit: #ef7468;
+  --f-display: "Cormorant Garamond", "Cormorant", "EB Garamond", Garamond, "Times New Roman", serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --step--1: 0.8125rem; --step-0: 0.9688rem; --step-1: 1.125rem; --step-2: 1.5rem; --step-3: clamp(1.9rem, 3.2vw, 2.6rem); --step-5: clamp(3.1rem, 8.4vw, 7.4rem);
+}
+html { background: var(--void); }
+body { background: var(--void); color: var(--ink); font-family: var(--f-body); font-size: var(--step-0); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1480px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 22px 64px; }
+a { color: var(--accent); text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- masthead ---------- */
+.masthead { position: relative; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px 56px; align-items: end; padding-block: 18px 30px; }
+.eyebrow { font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.eyebrow b { color: var(--new); font-weight: 500; }
+h1 { font-family: var(--f-display); font-weight: 600; font-size: var(--step-5); line-height: 0.86; margin: 14px 0 0; letter-spacing: -0.02em; text-wrap: balance; }
+h1 .the { display: block; font-size: 0.34em; font-style: italic; font-weight: 500; letter-spacing: 0; color: var(--muted); margin-bottom: 0.12em; }
+h1 em { font-style: italic; font-weight: 500; background: linear-gradient(100deg, #f6e7c4 0%, #8ef0cf 46%, #8fd0ff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 0.06em; }
+.lede { max-width: 60ch; color: var(--soft); margin: 18px 0 0; font-size: var(--step-1); line-height: 1.55; }
+.lede b { color: var(--ink); font-weight: 600; }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line-strong); }
+.stat { padding: 14px 4px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 2px; min-width: 0; }
+.stat:nth-child(odd) { padding-right: 18px; border-right: 1px solid var(--line); }
+.stat:nth-child(even) { padding-left: 18px; }
+.stat .n { font-family: var(--f-display); font-size: clamp(2rem, 3.6vw, 2.9rem); line-height: 1; font-weight: 600; font-variant-numeric: lining-nums tabular-nums; }
+.stat .n.new { color: var(--new); }
+.stat .d { font-size: var(--step--1); color: var(--muted); line-height: 1.4; }
+
+/* ---------- hero plate: stage + ladder ---------- */
+.plate { display: grid; grid-template-columns: minmax(0, 1fr) 330px; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--panel); box-shadow: 0 40px 120px -40px rgba(70, 110, 255, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.015) inset; }
+.stage { position: relative; height: clamp(460px, 76vh, 860px); background: radial-gradient(120% 90% at 60% 40%, #0c1530 0%, #060a18 46%, var(--void) 80%); overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hud { position: absolute; z-index: 2; pointer-events: none; }
+.hud > * { pointer-events: auto; }
+.hud-tl { top: 18px; left: 20px; right: 190px; display: grid; gap: 8px; justify-items: start; }
+.rung-title { font-family: var(--f-display); font-weight: 600; font-size: clamp(1.9rem, 3vw, 2.6rem); line-height: 1; text-shadow: 0 2px 18px rgba(3, 5, 12, 0.95); display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.rung-title i { font-style: italic; font-weight: 500; }
+.rung-title small { font-family: var(--f-mono); font-size: 0.8125rem; font-weight: 400; color: var(--muted); letter-spacing: 0.02em; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 9px; border-radius: 999px; background: rgba(8, 12, 26, 0.78); border: 1px solid var(--line-strong); font-size: var(--step--1); color: var(--ink); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); max-width: 100%; }
+.pill i { font-style: normal; width: 8px; height: 8px; border-radius: 50%; background: var(--known); flex: none; }
+.pill[data-status="new"] { border-color: rgba(142, 240, 207, 0.45); }
+.pill[data-status="new"] i { background: var(--new); box-shadow: 0 0 0 3px rgba(142, 240, 207, 0.2), 0 0 12px var(--new); }
+.hud-tr { top: 16px; right: 16px; display: grid; justify-items: end; gap: 8px; }
+.clock { font-family: var(--f-mono); font-size: var(--step--1); color: var(--muted); text-shadow: 0 1px 8px rgba(3, 5, 12, 0.95); white-space: nowrap; }
+.clock b { color: var(--ink); font-weight: 500; }
+.ctrl { display: inline-flex; gap: 6px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font: 500 var(--step--1) var(--f-body); color: var(--ink); background: rgba(17, 26, 49, 0.85); border: 1px solid var(--line-strong); border-radius: 9px; padding: 6px 12px; cursor: pointer; min-height: 34px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.btn:hover { border-color: var(--accent); }
+.btn svg { width: 14px; height: 14px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.seg { display: inline-flex; background: rgba(8, 12, 26, 0.8); border: 1px solid var(--line-strong); border-radius: 9px; padding: 2px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.seg button { font: 500 0.75rem var(--f-mono); color: var(--muted); background: transparent; border: 0; border-radius: 7px; padding: 6px 9px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--raise); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.seg button:hover { color: var(--ink); }
+.hud-bl { left: 20px; bottom: 18px; right: 220px; display: grid; gap: 10px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; font-family: var(--f-mono); font-size: 0.75rem; color: var(--muted); text-shadow: 0 1px 6px rgba(3, 5, 12, 0.95); }
+.legend b { color: var(--ink); font-weight: 500; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.hud-br { right: 16px; bottom: 14px; width: 188px; display: grid; justify-items: center; gap: 4px; }
+.hud-br canvas { position: static; width: 188px; height: 188px; border-radius: 50%; background: radial-gradient(circle at 50% 42%, rgba(24, 34, 66, 0.92), rgba(6, 9, 20, 0.94) 72%); box-shadow: 0 0 0 1px rgba(170, 184, 255, 0.22), 0 18px 40px -12px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(170, 184, 255, 0.06); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.hud-br .cap { font-family: var(--f-mono); font-size: 0.6875rem; color: var(--muted); text-align: center; line-height: 1.35; text-shadow: 0 1px 6px rgba(3, 5, 12, 0.95); }
+.hud-br .cap span { color: var(--faint); }
+.hud-br .cap b { font-family: var(--f-display); font-size: 1.35rem; font-weight: 600; color: var(--ink); letter-spacing: 0; }
+
+/* the word, spelled one syzygy at a time */
+.wordbar { grid-column: 1; border-top: 1px solid var(--line); padding: 14px 20px 16px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 22px; align-items: center; background: linear-gradient(180deg, rgba(10, 15, 31, 0.9), var(--panel)); }
+.wordbar .k { font: 600 0.6875rem var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.word { font-family: var(--f-mono); font-size: clamp(0.95rem, 1.55vw, 1.3rem); letter-spacing: 0.02em; display: flex; flex-wrap: wrap; gap: 2px 0; align-items: baseline; min-width: 0; }
+.word .g { display: inline-flex; align-items: baseline; padding: 0 3px; border-radius: 6px; }
+.word .g.rep { background: rgba(170, 184, 255, 0.06); box-shadow: inset 0 0 0 1px rgba(170, 184, 255, 0.12); margin: 0 3px; }
+.word .g.rep sup { font-size: 0.6em; color: var(--accent); margin-left: 2px; font-weight: 600; }
+.word .c { display: inline-block; min-width: 0.66em; text-align: center; color: var(--faint); transition: color 0.25s, text-shadow 0.25s; }
+.word .c.on { color: var(--soft); }
+.word .c.now { color: #fff; text-shadow: 0 0 14px var(--g2), 0 0 2px #fff; }
+.formula { font-family: var(--f-mono); font-size: var(--step--1); color: var(--muted); }
+.spin { width: 100%; height: 76px; display: block; min-width: 0; }
+.formula b { color: var(--ink); font-weight: 500; }
+.formula sup { color: var(--accent); }
+
+/* the ladder */
+.ladder { grid-column: 2; grid-row: 1 / span 2; border-left: 1px solid var(--line); background: linear-gradient(180deg, #0a1022, var(--panel) 30%); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; max-height: calc(clamp(460px, 76vh, 860px) + 96px); }
+.ladder-head { padding: 16px 18px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
+.ladder-head h2 { font: 600 0.6875rem var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 0; display: flex; justify-content: space-between; gap: 8px; }
+.ladder-head h2 span { text-transform: none; letter-spacing: 0.02em; font-weight: 400; color: var(--faint); }
+.mass-seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+.mass-seg button { padding: 7px 4px; }
+.rungs { overflow-y: auto; padding: 10px 14px 14px; position: relative; display: flex; flex-direction: column; gap: 0; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.rung { position: relative; display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 12px; align-items: center; padding: 8px 10px 8px 8px; background: transparent; border: 1px solid transparent; border-radius: 12px; color: inherit; font: inherit; text-align: left; cursor: pointer; width: 100%; }
+.rung + .rung { margin-top: 14px; }
+.rung::before, .rung::after { content: ""; position: absolute; top: -15px; height: 14px; width: 2px; background: linear-gradient(180deg, var(--line-strong), #303d62); }
+.rung::before { left: 18px; } .rung::after { left: 52px; }
+.rung:first-child::before, .rung:first-child::after { display: none; }
+.rung:hover { border-color: var(--line-strong); background: rgba(17, 26, 49, 0.5); }
+.rung[aria-pressed="true"] { border-color: rgba(170, 184, 255, 0.55); background: rgba(170, 184, 255, 0.07); }
+.rung canvas { width: 62px; height: 62px; display: block; border-radius: 10px; background: radial-gradient(circle at 50% 45%, #0f1834, #070b18 75%); box-shadow: inset 0 0 0 1px var(--line); }
+.rung .meta { display: grid; gap: 2px; min-width: 0; }
+.rung .kk { font-family: var(--f-display); font-size: 1.45rem; line-height: 1; font-weight: 600; display: flex; align-items: baseline; gap: 8px; }
+.rung .kk i { font-style: italic; font-weight: 500; color: var(--muted); font-size: 1.05rem; }
+.rung .tt { font-family: var(--f-mono); font-size: 0.6875rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip { justify-self: start; font: 500 0.625rem var(--f-mono); letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; color: var(--known); border: 1px solid rgba(133, 144, 173, 0.35); }
+.chip.new { color: var(--new); border-color: rgba(142, 240, 207, 0.45); background: var(--new-dim); }
+.chip.extra { color: var(--g3); border-color: rgba(255, 155, 179, 0.4); background: rgba(255, 155, 179, 0.08); }
+.ladder-foot { padding: 12px 18px 14px; border-top: 1px solid var(--line); font-size: 0.75rem; color: var(--faint); line-height: 1.45; }
+
+/* ---------- essay ---------- */
+.essay { max-width: 1180px; margin: 84px auto 0; display: grid; gap: 96px; }
+.essay > section { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 14px 44px; }
+.essay .label { font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); padding-top: 14px; border-top: 1px solid var(--line-strong); align-self: start; display: grid; gap: 6px; }
+.essay .label b { font-family: var(--f-display); font-size: 2.6rem; line-height: 1; letter-spacing: 0; color: var(--faint); font-weight: 500; font-style: italic; }
+.essay .body { min-width: 0; border-top: 1px solid var(--line); padding-top: 6px; }
+.essay h2 { font-family: var(--f-display); font-weight: 600; font-size: var(--step-3); line-height: 1.08; margin: 0 0 18px; text-wrap: balance; letter-spacing: -0.005em; }
+.essay h3 { font-family: var(--f-display); font-weight: 600; font-style: italic; font-size: var(--step-2); margin: 34px 0 8px; }
+.essay p, .essay li { max-width: 68ch; color: var(--soft); }
+.essay p { margin: 0 0 14px; }
+.essay strong { color: var(--ink); font-weight: 600; }
+.essay .new-t { color: var(--new); }
+.essay ul, .essay ol { padding-left: 1.2em; margin: 0 0 14px; }
+.essay li { margin-bottom: 8px; }
+.eq { margin: 18px 0 22px; padding: 18px 22px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; color: var(--ink); }
+.eq svg { max-width: none; }
+.eq-note { font-size: var(--step--1); color: var(--muted); margin-top: -12px; }
+figure { margin: 22px 0 10px; }
+figcaption { font-size: var(--step--1); color: var(--muted); margin-top: 10px; max-width: 80ch; line-height: 1.5; }
+figcaption b { color: var(--ink); font-weight: 500; }
+
+/* small multiples */
+.multiples { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.mult { display: grid; gap: 6px; min-width: 0; }
+.mult canvas { width: 100%; aspect-ratio: 1; max-width: 100%; display: block; border-radius: 12px; background: radial-gradient(circle at 50% 45%, #0e1731, #050814 75%); border: 1px solid var(--line); }
+.mult[data-status="new"] canvas { border-color: rgba(142, 240, 207, 0.35); box-shadow: 0 0 32px -10px rgba(142, 240, 207, 0.35); }
+.mult .cap { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 0.75rem; color: var(--muted); }
+.mult .cap b { font-family: var(--f-display); font-size: 1.25rem; color: var(--ink); font-weight: 600; }
+.mult .w { font-family: var(--f-mono); font-size: 0.6875rem; color: var(--faint); overflow-wrap: anywhere; line-height: 1.35; }
+.mult .w sup { color: var(--accent); }
+.periods { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 18px 0 6px; }
+.fact { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: var(--panel); display: grid; gap: 2px; }
+.fact .n { font-family: var(--f-mono); font-size: var(--step-1); color: var(--ink); font-variant-numeric: tabular-nums; }
+.fact .d { font-size: var(--step--1); color: var(--muted); line-height: 1.4; }
+
+/* fingerprint */
+.finger { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: stretch; margin: 20px 0 8px; }
+.finger .cell { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: radial-gradient(circle at 50% 45%, #0d1530, #050814 78%); aspect-ratio: 1; max-width: 100%; }
+.finger canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.finger .tag { position: absolute; left: 12px; top: 10px; font: 500 0.6875rem var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); pointer-events: none; }
+.finger .tag2 { position: absolute; left: 12px; bottom: 10px; right: 12px; font: 400 0.75rem var(--f-mono); color: var(--faint); pointer-events: none; }
+.finger .cell.sphere { cursor: grab; touch-action: none; }
+.keyrow { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: var(--step--1); color: var(--muted); margin: 10px 0 0; }
+.keyrow span { display: inline-flex; align-items: center; gap: 7px; }
+.sw { width: 18px; height: 3px; border-radius: 2px; display: inline-block; }
+.letters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 16px 0; }
+.letters div { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--panel); font-size: var(--step--1); color: var(--muted); }
+.letters b { font-family: var(--f-mono); font-size: 1.1rem; color: var(--ink); margin-right: 6px; }
+
+/* charts */
+.chart { position: relative; border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(180deg, #0a1022, #070b18); padding: 10px 6px 4px; overflow-x: auto; }
+.chart svg { display: block; width: 100%; height: auto; min-width: 560px; }
+.chart text { font-family: var(--f-mono); font-size: 11px; fill: var(--muted); }
+.chart .axis { stroke: var(--line-strong); stroke-width: 1; fill: none; }
+.chart .grid { stroke: var(--line); stroke-width: 1; fill: none; }
+.chart .ttl { font-size: 11px; fill: var(--faint); letter-spacing: 0.08em; }
+.chart .cat { fill: var(--known); opacity: 0.38; }
+.chart .band { fill: rgba(142, 240, 207, 0.045); }
+.chart .band2 { fill: rgba(133, 144, 173, 0.05); }
+.chart .lab-new { fill: var(--new); }
+.chart .lab-ink { fill: var(--ink); }
+.chart .pt { cursor: pointer; }
+.legend2 { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: var(--step--1); color: var(--muted); margin: 12px 2px 0; }
+.legend2 span { display: inline-flex; align-items: center; gap: 8px; }
+.legend2 i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+/* map */
+.mapwrap { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; align-items: start; margin-top: 18px; }
+.map { position: relative; border: 1px solid var(--line-strong); border-radius: 14px; overflow: hidden; background: #02040a; aspect-ratio: 1; max-width: 100%; }
+.map canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.map canvas.base { image-rendering: pixelated; }
+.map .axis-l { position: absolute; font: 400 0.6875rem var(--f-mono); color: var(--faint); pointer-events: none; }
+.side { display: grid; gap: 12px; align-content: start; }
+.readout { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: var(--panel); font-size: 0.75rem; color: var(--muted); display: grid; gap: 5px; min-height: 120px; }
+.readout b { color: var(--ink); font-weight: 500; font-family: var(--f-mono); }
+.ramp { height: 10px; border-radius: 3px; background: linear-gradient(90deg, #fff6dc, #ffc76a 18%, #e2508a 42%, #5a2a9e 66%, #121735 88%, #070a16); }
+.ramp-l { display: flex; justify-content: space-between; font: 400 0.6875rem var(--f-mono); color: var(--faint); margin-top: 4px; }
+.steps { list-style: none; padding: 0 !important; margin: 18px 0 !important; display: grid; gap: 0; counter-reset: s; }
+.steps li { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 14px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--line); margin: 0 !important; max-width: none !important; }
+.steps li::before { counter-increment: s; content: counter(s); font-family: var(--f-display); font-style: italic; font-size: 1.6rem; color: var(--faint); line-height: 1; }
+.steps li .n { font-family: var(--f-mono); font-size: var(--step--1); color: var(--ink); text-align: right; white-space: nowrap; }
+.steps li p { margin: 0; }
+.steps li strong { display: block; margin-bottom: 2px; }
+
+/* tables */
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); margin: 16px 0; }
+.tbl table { border-collapse: collapse; width: 100%; font-size: 0.75rem; }
+.tbl th { text-align: left; font: 500 0.6875rem var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); padding: 10px 12px; border-bottom: 1px solid var(--line-strong); white-space: nowrap; position: sticky; top: 0; background: var(--panel); }
+.tbl td { padding: 8px 12px; border-bottom: 1px solid var(--line); color: var(--soft); white-space: nowrap; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl td.w { white-space: normal; min-width: 140px; }
+.tbl td.ok { color: var(--new); }
+.tbl td.bad { color: var(--crit); }
+.tbl tr.sel td { background: rgba(170, 184, 255, 0.06); }
+.tbl button { font: 500 0.6875rem var(--f-body); color: var(--ink); background: var(--raise); border: 1px solid var(--line-strong); border-radius: 7px; padding: 4px 9px; cursor: pointer; }
+.tbl button:hover { border-color: var(--accent); }
+.verdicts { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin: 18px 0; }
+.verdict { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: var(--panel); display: grid; gap: 6px; align-content: start; }
+.verdict h4 { margin: 0; font: 600 0.6875rem var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.verdict h4 span { color: var(--new); letter-spacing: 0.06em; }
+.verdict h4 span.warn { color: var(--g1); }
+.verdict p { margin: 0 !important; font-size: var(--step--1); color: var(--soft); }
+.limits { list-style: none; padding: 0 !important; display: grid; gap: 10px; }
+.limits li { padding-left: 20px; position: relative; }
+.limits li::before { content: ""; position: absolute; left: 0; top: 0.65em; width: 10px; height: 1px; background: var(--muted); }
+.refs { font-size: var(--step--1); color: var(--muted); }
+.refs li { color: var(--muted) !important; }
+footer { max-width: 1180px; margin: 96px auto 0; padding-top: 18px; border-top: 1px solid var(--line); font-size: 0.75rem; color: var(--faint); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 24px; }
+.tooltip { position: fixed; z-index: 30; pointer-events: none; background: rgba(8, 12, 26, 0.96); border: 1px solid var(--line-strong); color: var(--ink); font: 400 0.75rem var(--f-mono); padding: 7px 10px; border-radius: 8px; white-space: nowrap; transform: translate(12px, -50%); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+.tooltip .k { color: var(--muted); }
+.toast { position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--raise); border: 1px solid var(--line-strong); color: var(--ink); font-size: var(--step--1); padding: 8px 14px; border-radius: 9px; z-index: 40; }
+
+@media (max-width: 1100px) {
+  .masthead { grid-template-columns: minmax(0, 1fr); }
+  .plate { grid-template-columns: minmax(0, 1fr); }
+  .ladder { grid-column: 1; grid-row: auto; border-left: 0; border-top: 1px solid var(--line); max-height: none; }
+  .rungs { flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 12px 14px 14px; gap: 8px; }
+  .rung { width: auto; flex: 0 0 auto; grid-template-columns: 54px auto; }
+  .rung + .rung { margin-top: 0; }
+  .rung::before, .rung::after { display: none; }
+  .rung canvas { width: 54px; height: 54px; }
+  .essay > section { grid-template-columns: minmax(0, 1fr); }
+  .essay .label { border-top: 0; padding-top: 0; grid-auto-flow: column; justify-content: start; align-items: baseline; gap: 12px; }
+  .essay .label b { font-size: 1.6rem; }
+  .mapwrap { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 720px) {
+  .stage { height: min(82vh, 128vw); min-height: 420px; }
+  .hud-tl { right: 16px; top: 64px; left: 16px; }
+  .hud-tr { left: 12px; right: 12px; top: 12px; grid-auto-flow: column; justify-content: space-between; align-items: center; }
+  .hud-bl { right: 16px; left: 16px; bottom: 12px; }
+  .hud-br { display: none; }
+  .wordbar { grid-template-columns: minmax(0, 1fr); padding: 12px 16px; }
+  .multiples { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .finger { grid-template-columns: minmax(0, 1fr); }
+  .letters { grid-template-columns: minmax(0, 1fr); }
+  .stats { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .stat:nth-child(odd) { padding-right: 10px; } .stat:nth-child(even) { padding-left: 10px; }
+  .steps li { grid-template-columns: 30px minmax(0, 1fr); }
+  .steps li .n { grid-column: 2; text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">Research note · Three-Body Observatory · <b>new periodic orbits</b></p>
+      <h1><span class="the">The Three-Body</span><em>Ladder</em></h1>
+      <p class="lede">Two equal stars and a lighter third can repeat the same dance forever if they start in exactly the right way. We searched a range of masses that the published surveys of this problem skip, and found a family of these repeating orbits built like a ladder: <b>on rung k the two heavy stars wind around each other k times, then unwind</b>. Rungs 1 and 2 were already known. <b>Rungs 3 to 11 are new.</b></p>
+    </div>
+    <div class="stats" id="stats">
+      <div class="stat"><span class="n new" id="stNewWords">9</span><span class="d">orbit topologies absent from every catalogue we could check</span></div>
+      <div class="stat"><span class="n new" id="stNewOrbits">16</span><span class="d">new periodic orbits, each confirmed by an independent integrator</span></div>
+      <div class="stat"><span class="n" id="stScanned">3.5M</span><span class="d" id="stScanD">starting conditions integrated across seven masses</span></div>
+      <div class="stat"><span class="n">2,044</span><span class="d">published orbits of this kind compared, by topology and by numbers</span></div>
+    </div>
+  </header>
+
+  <section class="plate" aria-label="The ladder family, animated">
+    <div class="stage" id="stage">
+      <canvas id="sky" aria-hidden="true"></canvas>
+      <canvas id="ghost" aria-hidden="true"></canvas>
+      <canvas id="live" role="img" aria-label="Animated orbit of the selected rung"></canvas>
+      <div class="hud hud-tl">
+        <div class="rung-title" id="rungTitle">Rung <i>k</i> = 3</div>
+        <span class="pill" id="rungPill" data-status="new"><i></i><span id="rungStatus">New</span></span>
+      </div>
+      <div class="hud hud-tr">
+        <div class="clock" id="clock">t <b>0.00</b> of <b>38.30</b></div>
+        <div class="ctrl">
+          <button class="btn" id="play" type="button" aria-label="Pause"><svg viewBox="0 0 16 16" aria-hidden="true"><path id="playIcon" d="M4 3h3v10H4zM9 3h3v10H9z" fill="currentColor"/></svg></button>
+          <div class="seg" role="group" aria-label="Speed">
+            <button type="button" data-speed="0.5" aria-pressed="false">½×</button>
+            <button type="button" data-speed="1" aria-pressed="true">1×</button>
+            <button type="button" data-speed="2.5" aria-pressed="false">2.5×</button>
+          </div>
+        </div>
+      </div>
+      <div class="hud hud-bl">
+        <div class="legend" id="legend">
+          <span><i class="dot" style="background: var(--b1)"></i><b>star 1</b> m = 1</span>
+          <span><i class="dot" style="background: var(--b2)"></i><b>star 2</b> m = 1</span>
+          <span><i class="dot" style="background: var(--b3)"></i><b>star 3</b> m = <span id="legM3">0.5</span></span>
+          <span><i class="sw" style="background: rgba(255,255,255,0.7); height: 1px"></i>line-ups</span>
+        </div>
+      </div>
+      <div class="hud hud-br">
+        <canvas id="lens" aria-hidden="true"></canvas>
+        <div class="cap"><b id="lensTurns">0.0 turns</b><br>the heavy pair from its own centre<br><span id="lensCap">winds k times, then unwinds</span></div>
+      </div>
+    </div>
+    <div class="wordbar">
+      <span class="k">Word</span>
+      <div class="word" id="word" aria-live="off"></div>
+      <span class="k">Spin</span>
+      <canvas class="spin" id="spin" role="img" aria-label="Turns of the heavy pair through one period, with the times each letter is written"></canvas>
+      <span class="k">Rule</span>
+      <div class="formula" id="formula">(Ba)<sup>k+1</sup> (bA)<sup>k+1</sup></div>
+    </div>
+    <aside class="ladder" aria-label="Rungs">
+      <div class="ladder-head">
+        <h2>The ladder <span id="ladderNote">m₃ = 0.5</span></h2>
+        <div class="seg mass-seg" role="group" aria-label="Mass of star 3" id="massSeg"></div>
+      </div>
+      <div class="rungs" id="rungs"></div>
+      <div class="ladder-foot" id="ladderFoot">Rungs ordered by k. Thumbnails trace one full period.</div>
+    </aside>
+  </section>
+
+  <main class="essay">
+    <section id="rungs-explained">
+      <div class="label"><b>i</b>The family</div>
+      <div class="body">
+        <h2>Each rung adds one turn</h2>
+        <p>All five orbits below start from the same kind of position: the two heavy stars at ±1 on a line, the light star exactly between them, everything moving with zero total momentum and zero total spin. Only the launch velocity differs.</p>
+        <p>The motion is the same story on every rung. The light star swings out on a long loop to one side while the heavy pair winds around each other <strong>k times</strong>. Exactly half a period later the light star falls back through the middle, the three stars line up as they started (mirrored), and the light star swings out to the other side while the pair unwinds the same k turns. Because the total spin is zero, the pair's winding is always balanced by the light star's swing. Each rung up the ladder adds one more turn in each direction.</p>
+        <figure>
+          <div class="multiples" id="multiples"></div>
+          <figcaption>Rungs <b>k = 1 to 5</b> at m₃ = 0.5, played so that each finishes its period at the same moment. Rungs 1 and 2 are in Li, Jing &amp; Liao's 2018 catalogue as I.A i.c. 2 and i.c. 3. Rungs 3, 4 and 5 are not, although they lie inside the range that survey searched. Click any panel to open it above.</figcaption>
+        </figure>
+        <div class="periods" id="periodFacts"></div>
+        <p>The rungs are spaced almost exactly evenly in time. At m₃ = 0.25 each extra turn adds 8.96 to 9.02 time units to the period, from k = 3 all the way to k = 11. This is an instance of what Dmitrašinović and Šuvakov (2015) called the topological dependence of Kepler's third law: the scale-free period grows in step with the length of the orbit's word. We used that spacing to predict where the next rung should be before we found it. The launch velocities crowd together as k grows, each rung starting a little closer to the one before, as though the ladder were climbing toward a limit.</p>
+      </div>
+    </section>
+
+    <section id="fingerprint">
+      <div class="label"><b>ii</b>Topology</div>
+      <div class="body">
+        <h2>How an orbit gets its name</h2>
+        <p>Two orbits can look different on screen and still be the same orbit seen from a different scale or angle. To tell orbits apart, the field uses a fingerprint that ignores size and rotation: Montgomery's <strong>shape sphere</strong>. Every triangle the three stars can form is one point on this sphere. Equilateral triangles sit at the poles. Straight-line arrangements, where one star sits between the other two, lie on the equator. The three collision points are holes in the equator that no orbit can cross.</p>
+        <div class="finger">
+          <div class="cell"><canvas id="fOrbit" aria-label="Orbit in space"></canvas><span class="tag">In space</span><span class="tag2" id="fOrbitCap"></span></div>
+          <div class="cell sphere" id="fSphereCell"><canvas id="fSphere" aria-label="The same orbit on the shape sphere; drag to rotate"></canvas><span class="tag">On the shape sphere · drag</span><span class="tag2" id="fSphereCap"></span></div>
+        </div>
+        <div class="keyrow">
+          <span><i class="sw" style="background: var(--b1)"></i>star 1 in the middle</span>
+          <span><i class="sw" style="background: var(--b2)"></i>star 2 in the middle</span>
+          <span><i class="sw" style="background: var(--b3)"></i>star 3 in the middle</span>
+          <span><i class="dot" style="background: #000; box-shadow: 0 0 0 1.5px var(--muted)"></i>collision point</span>
+        </div>
+        <p style="margin-top: 16px">Each time the stars line up, the curve crosses the equator. Reading the crossings in pairs and noting which arc each one used turns the path into a word in four letters. The word records how the orbit winds around the collision holes, so any orbit that can be smoothly deformed into another without passing through a collision gets the same word. That makes it the right key for comparing against catalogues.</p>
+        <div class="letters">
+          <div><b>a</b> <b>A</b>one loop around the right-hand collision point, in either direction</div>
+          <div><b>b</b> <b>B</b>one loop around the left-hand collision point</div>
+          <div><b>(Ba)<sup>k+1</sup></b>written while the heavy pair winds; <b style="font-size:inherit">(bA)<sup>k+1</sup></b> while it unwinds</div>
+        </div>
+        {{EQ:word}}
+        <p class="eq-note">The rung-k word has 4k + 4 letters; the two forms are the same word read from different starting letters. We use the conventions of Šuvakov &amp; Dmitrašinović (2013) and Li &amp; Liao (2017), and confirmed them by reproducing the published words of 12 known orbits exactly. With k = 0 the word would be that of the famous figure-eight orbit; rung 2's word also appears at equal masses in the high-precision set of Hristov et al. (2022).</p>
+      </div>
+    </section>
+
+    <section id="where">
+      <div class="label"><b>iii</b>Discovery</div>
+      <div class="body">
+        <h2>Where the ladder lives</h2>
+        <p>Published surveys of this family of starting conditions looked at a handful of masses for the third star: 0.5, 0.75, 1, 2, 4, 5, 8 and 10. We searched below 0.5, where we found no published search of this kind, and then followed each rung continuously as the third star gets heavier. The figure shows the result. Each curve is one rung, traced through hundreds of exact orbits. The higher the rung, the lighter the third star has to be.</p>
+        <figure>
+          <div class="chart" id="familyChart"></div>
+          <div class="legend2">
+            <span><i style="background: var(--new); box-shadow: 0 0 8px var(--new)"></i>new orbit (this work)</span>
+            <span><i style="background: transparent; box-shadow: inset 0 0 0 1.5px var(--known)"></i>rung already catalogued</span>
+            <span><i style="background: var(--known); opacity: 0.5; width: 6px; height: 6px"></i>every published orbit at that mass (T* &lt; 45)</span>
+            <span><i style="background: rgba(142,240,207,0.25); border-radius: 2px; width: 14px"></i>masses we searched by grid</span>
+          </div>
+          <figcaption>Scale-free period <b>T* = T·|E|<sup>3/2</sup></b> against the mass of the third star. Rung 1 continues smoothly all the way to m₃ = 1, where it becomes the known equal-mass orbit I.A i.c. 3 of Li &amp; Liao (2017); we matched it there to all ten published digits. The ends of the other curves are where our continuation stopped converging, not proven ends of the families. Click any point to load it above.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="search">
+      <div class="label"><b>iv</b>Method</div>
+      <div class="body">
+        <h2>How we found it</h2>
+        <p>For each mass we launched about half a million trial orbits on a fine grid of starting velocities and watched each one for up to 100 time units. A periodic orbit returns exactly to where it began, so we kept every trial that came back close to its own start. The map shows that closeness for every trial (400 × 400 here, watched to t = 60). Bright threads are near-returns. The few points where a thread pinches to a single bright dot are the periodic orbits. At m₃ = 0.25 the new rungs sit in one tight cluster: each rung starts almost where the last one did.</p>
+        <div class="mapwrap">
+          <div>
+            <div class="seg" role="group" aria-label="Map mass" id="mapSeg" style="margin-bottom: 10px"></div>
+            <div class="map" id="map"><canvas class="base" id="mapBase" aria-label="Return-distance map"></canvas><canvas id="mapOver" aria-hidden="true"></canvas></div>
+          </div>
+          <div class="side">
+            <div>
+              <div class="ramp" aria-hidden="true"></div>
+              <div class="ramp-l"><span>returns exactly</span><span>never returns</span></div>
+            </div>
+            <div class="readout" id="mapReadout"><span>Point at the map to read a trial orbit. Circles mark periodic orbits we refined; <b style="color: var(--new)">green</b> ones are new.</span></div>
+            <p style="font-size: var(--step--1); color: var(--muted); margin: 0">Horizontal: the launch speed along the line of the stars, v₁. Vertical: the speed across it, v₂. Dark corners are orbits that are not bound and fly apart.</p>
+          </div>
+        </div>
+        <ol class="steps" id="steps">
+          <li><p><strong>Scan.</strong> 800 × 800 launch velocities per mass, each integrated with a regularized Bulirsch–Stoer solver that keeps 11 digits through close encounters.</p><span class="n" id="nScan">3,518,620 orbits</span></li>
+          <li><p><strong>Keep near-returns.</strong> Every local minimum of the distance between the current state and the starting state, when it drops below 0.15.</p><span class="n" id="nCand">—</span></li>
+          <li><p><strong>Newton-refine.</strong> Adjust the two launch speeds and the period together until the orbit closes on itself to better than 10<sup>−11</sup>.</p><span class="n" id="nRef">—</span></li>
+          <li><p><strong>Name it.</strong> Compute the word on the shape sphere and reduce it to a canonical form that ignores the starting point and the direction of time.</p><span class="n" id="nDistinct">—</span></li>
+          <li><p><strong>Compare.</strong> Check the word against all 2,044 published words for this kind of orbit, and the numbers against all published starting conditions.</p><span class="n" id="nNew">—</span></li>
+          <li><p><strong>Follow and test.</strong> Continue each new orbit to other masses, predict the next rung from the even spacing, and measure stability from the full monodromy matrix.</p><span class="n" id="nBranches">6 branches</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="checks">
+      <div class="label"><b>v</b>Verification</div>
+      <div class="body">
+        <h2>How we checked it</h2>
+        <p>A claim of a new orbit can fail in three ways: the orbit is not really periodic, it is really a known orbit under another name, or it was in the literature all along. Each claim went through separate checks for each, run by independent reviewers with their own code.</p>
+        <div class="verdicts" id="verdicts"></div>
+        <h3>All rungs are unstable</h3>
+        <p>None of these orbits would survive in a real star system. A tiny nudge grows by the factor shown below each time the orbit repeats, and the growth gets faster as the rungs get longer. They are the hidden skeleton of the chaotic motion around them: the unstable repeating paths that chaotic orbits shadow for a while before wandering off.</p>
+        <figure>
+          <div class="chart" id="stabChart"></div>
+          <figcaption>Largest Floquet multiplier per period, from the monodromy matrix after removing the directions fixed by energy, momentum, angular momentum and rotation. A value of 1 would be neutrally stable. Grey lines are the rungs at m₃ = 0.15, 0.2 and 0.3. The extra k = 3 orbit at m₃ = 0.25 (pink) has the same word as rung 3 but a different shape and is far more unstable.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="data">
+      <div class="label"><b>vi</b>Data</div>
+      <div class="body">
+        <h2>Starting conditions</h2>
+        <p>Every orbit here starts with star 1 at (−1, 0), star 2 at (1, 0) and star 3 at the origin. Stars 1 and 2 both move with velocity (v₁, v₂), and star 3 moves with −2(v₁, v₂)/m₃, so the total momentum and angular momentum are zero. With G = 1, these numbers reproduce each orbit in any good integrator. <strong>Check</strong> re-integrates the orbit in your browser and reports how closely it returns to its start.</p>
+        {{EQ:slice}}
+        <div class="tbl" id="icTable"></div>
+      </div>
+    </section>
+
+    <section id="limits">
+      <div class="label"><b>vii</b>Scope</div>
+      <div class="body">
+        <h2>What this does and does not show</h2>
+        <ul class="limits">
+          <li><strong>New here means</strong> absent from the catalogues of Šuvakov &amp; Dmitrašinović (2013), Li &amp; Liao (2017; 695 equal-mass families), Li, Jing &amp; Liao (2018; 1,349 unequal-mass orbits) and Li &amp; Liao (2019; 316 free-fall orbits), checked by word under every physical symmetry and by starting values. We could not open the Sofia group's equal-mass databases (Hristov, Hristova and coauthors, 2022–2025). If the higher rungs continue all the way to equal masses, some of these words may already be listed there; the orbits at m₃ = 0.1 to 0.75 would still be new.</li>
+          <li><strong>The orbits are numerical.</strong> Each closes to about 10<sup>−9</sup> to 10<sup>−11</sup> in 64-bit arithmetic, confirmed by an independent integrator. That is strong evidence, but not a computer-assisted proof.</li>
+          <li><strong>The curve ends are not family ends.</strong> Our continuation stops where the orbits become too unstable for double precision to follow. The branches may continue further.</li>
+          <li><strong>Only one plane of starting conditions.</strong> We searched the standard isosceles slice with zero angular momentum and two equal masses. Orbits with spin, three different masses, or motion in three dimensions are outside this search.</li>
+          <li><strong>Nothing here is stable.</strong> These orbits are mathematical objects that organize chaotic motion. They are not predictions of systems we would find in the sky.</li>
+        </ul>
+        <h3>References</h3>
+        <ol class="refs">
+          <li>M. Šuvakov &amp; V. Dmitrašinović, Three classes of Newtonian three-body planar periodic orbits, <i>Phys. Rev. Lett.</i> 110, 114301 (2013).</li>
+          <li>X. Li &amp; S. Liao, More than six hundred new families of Newtonian periodic planar collisionless three-body orbits, <i>Sci. China Phys. Mech. Astron.</i> 60, 129511 (2017).</li>
+          <li>X. Li, Y. Jing &amp; S. Liao, Over a thousand new periodic orbits of a planar three-body system with unequal masses, <i>Publ. Astron. Soc. Japan</i> 70, 64 (2018).</li>
+          <li>X. Li &amp; S. Liao, Collisionless periodic orbits in the free-fall three-body problem, <i>New Astron.</i> 70, 22 (2019).</li>
+          <li>R. Montgomery, The N-body problem, the braid group, and action-minimizing periodic solutions, <i>Nonlinearity</i> 11, 363 (1998).</li>
+          <li>V. Dmitrašinović &amp; M. Šuvakov, Topological dependence of Kepler's third law for collisionless periodic three-body orbits with vanishing angular momentum and equal masses, <i>Phys. Lett. A</i> 379, 1939 (2015).</li>
+          <li>I. Hristov, R. Hristova, I. Puzynin, T. Puzynina, Z. Sharipov &amp; Z. Tukhliev, New families of periodic orbits for the planar three-body problem computed with high precision (2022), and later equal-mass searches by the same group (2023–2026).</li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>The Three-Body Ladder · computed with the regularized solver of the <a href="https://claude.ai/artifact/LK3dio2XDdDQX8LUewuca7">Three-Body Observatory</a> · code and data at <a href="https://github.com/eucliss/three-body-problem">github.com/eucliss/three-body-problem</a></span>
+    <span id="builtOn"></span>
+  </footer>
+</div>
+<div class="tooltip" id="tip" hidden></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>/*__SOLVER__*/</script>
+<script>window.LADDER = /*__DATA__*/null;</script>
+<script>/*__APP__*/</script>

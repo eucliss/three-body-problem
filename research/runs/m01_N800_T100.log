@@ -1,0 +1,24 @@
+5%  6s  candidates 77
+10%  13s  candidates 82
+15%  20s  candidates 101
+20%  26s  candidates 132
+25%  33s  candidates 159
+30%  40s  candidates 184
+35%  47s  candidates 214
+40%  54s  candidates 252
+45%  60s  candidates 290
+50%  66s  candidates 298
+55%  70s  candidates 306
+60%  71s  candidates 306
+65%  73s  candidates 306
+70%  74s  candidates 306
+75%  76s  candidates 306
+80%  77s  candidates 306
+85%  78s  candidates 306
+90%  79s  candidates 306
+95%  79s  candidates 306
+100%  80s  candidates 306
+done m3=0.1 N=800 Tmax=100 in 80s, 306 candidate rows
+m3=0.1: 305 refinement jobs
+200/305  converged 56  distinct 7  4s
+done: 305 jobs, 81 converged, 7 distinct orbits, 6s

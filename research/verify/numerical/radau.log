@@ -1,0 +1,20 @@
+L1@0.25                      Radau tol=1e-12 res=4.55e-13 nsteps=14786 t=4s
+L2@0.25                      Radau tol=1e-12 res=4.99e-12 nsteps=20467 t=6s
+L3@0.25                      Radau tol=1e-12 res=4.16e-12 nsteps=27236 t=9s
+L4@0.25                      Radau tol=1e-12 res=4.29e-11 nsteps=34233 t=11s
+L5@0.25                      Radau tol=1e-12 res=2.51e-11 nsteps=41151 t=11s
+L6@0.25                      Radau tol=1e-12 res=5.31e-11 nsteps=48072 t=15s
+L7@0.25                      Radau tol=1e-12 res=1.26e-11 nsteps=54963 t=16s
+L8@0.25                      Radau tol=1e-12 res=2.01e-11 nsteps=62005 t=19s
+L9@0.25                      Radau tol=1e-12 res=2.97e-10 nsteps=68885 t=21s
+L10@0.25                     Radau tol=1e-12 res=8.22e-10 nsteps=75869 t=21s
+L11@0.25                     Radau tol=1e-12 res=9.65e-10 nsteps=82896 t=22s
+X3@0.25                      Radau tol=1e-12 res=8.58e-10 nsteps=31398 t=8s
+L4@0.1                       Radau tol=1e-12 res=2.84e-11 nsteps=48676 t=13s
+L3@0.1                       Radau tol=1e-12 res=4.33e-11 nsteps=37712 t=10s
+L3@0.5                       Radau tol=1e-12 res=6.73e-10 nsteps=19601 t=5s
+L3@0.75                      Radau tol=1e-12 res=1.50e-10 nsteps=15621 t=4s
+L4@0.5                       Radau tol=1e-12 res=3.72e-11 nsteps=23484 t=6s
+L5@0.5                       Radau tol=1e-12 res=6.56e-11 nsteps=27448 t=8s
+catalogue I.A i.c. 2 (0.5)   Radau tol=1e-12 res=9.54e-09 nsteps=12185 t=3s
+catalogue I.A i.c. 3 (0.5)   Radau tol=1e-12 res=1.43e-08 nsteps=15616 t=4s

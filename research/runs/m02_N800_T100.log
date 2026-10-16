@@ -1,0 +1,24 @@
+5%  8s  candidates 151
+10%  17s  candidates 153
+15%  27s  candidates 157
+20%  37s  candidates 178
+25%  46s  candidates 190
+30%  56s  candidates 219
+35%  66s  candidates 229
+40%  74s  candidates 241
+45%  82s  candidates 244
+50%  90s  candidates 266
+55%  97s  candidates 282
+60%  103s  candidates 282
+65%  107s  candidates 285
+70%  110s  candidates 285
+75%  112s  candidates 285
+80%  113s  candidates 285
+85%  114s  candidates 285
+90%  115s  candidates 285
+95%  116s  candidates 285
+100%  117s  candidates 285
+done m3=0.2 N=800 Tmax=100 in 117s, 285 candidate rows
+285 rows -> 123 candidates in 69 cells (dmax 0.15, cell 0.004, tbin 0.5, keep 3)
+m3=0.2: 123 refinement jobs
+done: 123 jobs, 59 converged, 10 distinct orbits, 2s

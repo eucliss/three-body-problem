@@ -1,0 +1,433 @@
+{
+  "summary": "Independently and adversarially verify claimed new periodic three-body orbits (numerics, topology, novelty)",
+  "agentCount": 4,
+  "logs": [],
+  "result": {
+    "results": [
+      {
+        "method": "I wrote my own code from scratch in /tmp/claude-0/-home-user-elementFi-takehome/abe89a27-8b28-5869-a9f7-5ac0ed0d524d/scratchpad/verify/numerical/. I did not use the project's solver or topology code, and I modified nothing under /home/user/three-body-problem.\n\n- nb.py: planar Newtonian right-hand side with G=1 and no regularization, plus helpers for the slice initial condition, energy E, angular momentum L and momentum P.\n- check.py: integrates each entry with solve_ivp DOP853 at rtol=atol=1e-13 with dense output to the claimed T, and reports:\n  - max|Y(T)-Y(0)| over all 12 position and velocity components;\n  - the same residual at tolerances 1e-12 and 2.3e-14/1e-15, to show it is integration error;\n  - E and T* recomputed from the initial condition and compared with the claim;\n  - L(0), max|L(t)| and max|E(t)-E0|;\n  - the minimum pairwise distance over one period (grid of 400k dense points plus all solver steps, refined with a bounded minimizer);\n  - the minimum of max|Y(t)-Y0| within +-5% of T/n for n=2..6 (refined), and the minimum over the whole interval (0.1T, 0.9T).\n- altmeth.py: repeats the closure test with a different integrator family, implicit Radau IIA at rtol=atol=1e-12.\n- stab.py: my own 12x12 variational equations give the monodromy matrix and Floquet multipliers (8 trivial multipliers removed). It then runs my own Gauss-Newton on (v1, v2, T) inside the slice to see how far the claimed values sit from the nearest exactly closing solution.\n- shaperet.py: looks for returns in shape space (pair distances, their rates, and the angular parts) up to reflection, time reversal and the 1<->2 relabeling.\n- parsecat.py: parses the Li & Liao picture tables into JSON (run with python3 -I), so claimed T* and (v1, v2) can be compared with catalogue rows at the same m3.\n\nOutputs are claims_out.json, claims_stab.json, claims.log, claims_stab.log, radau.log, classic.log and classic_stab.json in the same directory.\n\nEach full run took seconds to about 20 s per orbit.",
+        "controls_ok": true,
+        "claims": [
+          {
+            "id": "L1@0.25",
+            "verdict": "confirmed",
+            "detail": "Control, closes. DOP853(1e-13) max|Y(T)-Y0| = 1.8e-11; 2.4e-10 at tol 1e-12; 1.9e-12 at tol 2.3e-14; Radau 4.6e-13. Newton shift: |dv| <= 4e-15, dT = -2e-13. rmin = 0.124 (pair 1-2). Energy drift 1e-12. L(0) = 0 exactly, max|L| = 3e-14, P = 0. No return at T/n (minimum 1.29) or anywhere in (0.1T, 0.9T) (minimum 0.77). Multipliers: |lambda|max = 12.1, two real hyperbolic pairs (unstable)."
+          },
+          {
+            "id": "L2@0.25",
+            "verdict": "confirmed",
+            "detail": "Control, closes. Residual 1.5e-11 (2.1e-10 at tol 1e-12, 6.5e-12 at 2.3e-14, Radau 5.0e-12). Newton dT = -4e-12. rmin = 0.160 (pair 1-2). Energy drift 2e-12, L = 0. No sub-return (T/n minimum 1.02, interior 0.84). |lambda|max = 22.9: one elliptic pair 0.854+-0.521i and one hyperbolic pair (unstable)."
+          },
+          {
+            "id": "L3@0.25",
+            "verdict": "confirmed",
+            "detail": "Residual 2.5e-11 (6.0e-10 at tol 1e-12, 9.4e-12 at 2.3e-14, Radau 4.2e-12). The residual shrinks as tolerance tightens, so it is integration error, not a closure defect. Newton shift |dv| <= 3e-14, dT = 8e-13. rmin = 0.153, no collision. Energy drift 2e-12, L = 0. No return at T/2..T/6 (minimum 0.85) or in (0.1T, 0.9T), so T is the minimal period. The shape returns exactly at T/2 to the mirror image of the starting shape (1.6e-11); this is a symmetry of the orbit, not a shorter period. E and T* match the claim to machine precision. |lambda|max = 41.8 (unstable)."
+          },
+          {
+            "id": "L4@0.25",
+            "verdict": "confirmed",
+            "detail": "Residual 2.1e-10 (1.1e-9 at tol 1e-12, 8.4e-11 at 2.3e-14, Radau 4.3e-11). Newton dT = -7e-12. rmin = 0.160. Energy drift 3e-12, L = 0. No T/n or interior return (minimum 0.85). Mirror symmetry at T/2. |lambda|max = 69.4 (unstable)."
+          },
+          {
+            "id": "L5@0.25",
+            "verdict": "confirmed",
+            "detail": "Residual 1.5e-10 (3.9e-9 at tol 1e-12, 3.5e-11 at 2.3e-14, Radau 2.5e-11). Newton dT = -7e-12. rmin = 0.162. Energy drift 3e-12, L = 0. No sub-return (minimum 0.84). |lambda|max = 111 (unstable)."
+          },
+          {
+            "id": "L6@0.25",
+            "verdict": "confirmed",
+            "detail": "Residual 6.8e-10 (8.4e-9 at tol 1e-12, 1.1e-10 at 2.3e-14, Radau 5.3e-11). Newton dT = -5e-12. rmin = 0.165. Energy drift 3e-12, L = 0. No sub-return (minimum 0.84). |lambda|max = 170 (unstable)."
+          },
+          {
+            "id": "L7@0.25",
+            "verdict": "confirmed",
+            "detail": "Residual 1.0e-9 (1.5e-8 at tol 1e-12, 2.1e-10 at 2.3e-14, Radau 1.3e-11). Newton dT = -2e-11. rmin = 0.166. Energy drift 4e-12, L = 0. No sub-return (minimum 0.84). |lambda|max = 250 (unstable)."
+          },
+          {
+            "id": "L8@0.25",
+            "verdict": "confirmed",
+            "detail": "Residual 1.8e-9 (2.5e-8 at tol 1e-12, 3.7e-10 at 2.3e-14, Radau 2.0e-11). Newton dT = -3e-11. rmin = 0.168. Energy drift 4e-12, L = 0. No sub-return (minimum 0.84). |lambda|max = 354 (unstable)."
+          },
+          {
+            "id": "L9@0.25",
+            "verdict": "confirmed",
+            "detail": "Residual 3.2e-9 (4.0e-8 at tol 1e-12, 6.9e-10 at 2.3e-14, Radau 3.0e-10). Newton dT = -2e-11, |dv| <= 6e-14. rmin = 0.169. Energy drift 5e-12, L = 0. No sub-return (minimum 0.84). |lambda|max = 486 (unstable)."
+          },
+          {
+            "id": "L10@0.25",
+            "verdict": "confirmed",
+            "detail": "Residual 4.6e-9 (5.1e-8 at tol 1e-12, 1.2e-9 at 2.3e-14, Radau 8.2e-10). Newton dT = -4e-11. rmin = 0.170. Energy drift 5e-12, L = 0. No sub-return (minimum 0.84). |lambda|max = 650 (unstable)."
+          },
+          {
+            "id": "L11@0.25",
+            "verdict": "confirmed",
+            "detail": "Residual 7.6e-9 (8.2e-8 at tol 1e-12, 1.6e-9 at 2.3e-14, Radau 9.7e-10). This is the largest residual, consistent with T = 98.9 and |lambda|max = 850. Newton shift |dv| <= 1e-13, dT = -5e-11. rmin = 0.171. Energy drift 6e-12, L = 0. No sub-return (minimum 0.84). Unstable."
+          },
+          {
+            "id": "X3@0.25",
+            "verdict": "confirmed",
+            "detail": "Residual 1.3e-9 (2.7e-8 at tol 1e-12, 4.3e-11 at 2.3e-14, Radau 8.6e-10). Newton shift |dv| <= 8e-14, dT = -4e-12. rmin = 0.028 (pair 2-3): the closest approach of any claim, but no collision. Energy drift 2e-12, L = 0. No T/n return (minimum 0.69) and interior minimum 0.49, so T = 17.45 is minimal. T* = 11.718 versus 13.159 for L3@0.25, so it is a different orbit from L3@0.25, not the same orbit met at another point of the slice. Unlike every L_k and control, it has no mirror or time-reversal shape return within the period (minimum 0.26), so it is in a different symmetry class. |lambda|max = 1219, the most unstable entry."
+          },
+          {
+            "id": "L4@0.1",
+            "verdict": "confirmed",
+            "detail": "Residual 4.3e-10 (6.1e-9 at tol 1e-12, 1.0e-10 at 2.3e-14, Radau 2.8e-11). Newton dT = -1e-11. rmin = 0.027 (pair 1-2), no collision. Energy drift 5e-12, L = 0. No sub-return (minimum 0.86). Multipliers form a complex quartet of modulus 52.7 and 0.019 (complex instability)."
+          },
+          {
+            "id": "L3@0.1",
+            "verdict": "confirmed",
+            "detail": "Residual 2.7e-11 (2.3e-9 at tol 1e-12, 1.0e-11 at 2.3e-14, Radau 4.3e-11). Newton dT = -2e-11. rmin = 0.025 (pair 1-2), no collision. Energy drift 4e-12, L = 0. No sub-return (minimum 0.85). Mirror symmetry at T/2. Complex quartet of modulus 39.2 (unstable)."
+          },
+          {
+            "id": "L3@0.5",
+            "verdict": "confirmed",
+            "detail": "Residual 4.8e-10, but it does not shrink with tolerance (1.3e-9 at 1e-12, 6.6e-10 at 2.3e-14, Radau 6.7e-10). So the floor comes from the precision of the initial condition: Newton moves v by 8e-13 and T by -2e-10, which closes the orbit to 2e-12. That is still far below the 1e-4 refutation threshold. rmin = 0.273. Energy drift 2e-12, L = 0. No sub-return (minimum 0.70). |lambda|max = 9.9, two hyperbolic pairs (unstable). No row in the m3=0.5 catalogue table has T* within 0.3 of 16.915, and the claimed v1 = 0.3823 lies above the largest v1 in that table (0.36977)."
+          },
+          {
+            "id": "L3@0.75",
+            "verdict": "confirmed",
+            "detail": "Residual 3.7e-10 (6.1e-9 at tol 1e-12, 1.2e-10 at 2.3e-14, Radau 1.5e-10). Newton shift |dv| <= 1e-12, dT = 4e-10. rmin = 0.312. Energy drift 6e-13, L = 0. No sub-return (minimum 0.63). One elliptic pair (-0.999+-0.052i) and one hyperbolic pair, |lambda|max = 119 (unstable). No m3=0.75 catalogue row within 0.3 of T* = 20.585, and v1 = 0.5709 is above the table's largest v1 (0.5663)."
+          },
+          {
+            "id": "L4@0.5",
+            "verdict": "confirmed",
+            "detail": "Residual 4.2e-10 (3.6e-9 at tol 1e-12, 4.9e-11 at 2.3e-14, Radau 3.7e-11). Newton dT = -6e-11. rmin = 0.275. Energy drift 3e-12, L = 0. No sub-return (minimum 0.70). Complex quartet of modulus 12.0 (unstable). The nearest m3=0.5 catalogue T* values (20.457, 20.5, 20.903) belong to other orbits, with different v and Lf."
+          },
+          {
+            "id": "L5@0.5",
+            "verdict": "confirmed",
+            "detail": "Residual 5.7e-10 (5.9e-9 at tol 1e-12, 7.6e-11 at 2.3e-14, Radau 6.6e-11). Newton dT = -1e-10. rmin = 0.276. Energy drift 3e-12, L = 0. No sub-return (minimum 0.71). Complex quartet of modulus 17.1 (unstable). The nearest m3=0.5 catalogue row (T* = 24.471, Lf = 22) is a different orbit."
+          },
+          {
+            "id": "catalogue I.A i.c. 2 (0.5)",
+            "verdict": "confirmed",
+            "detail": "Control using the published 10-digit values; closes. Residual 9.6e-9 at every tolerance (9.9e-9, 9.5e-9, Radau 9.5e-9), which is the floor set by 10-digit rounding. Newton shift: dv about 5e-11, dT = -2e-10; the residual then falls to 3e-11. rmin = 0.252. No sub-return (minimum 0.63). Mirror symmetry at T/2. Unstable (|lambda| = 7.19, plus one elliptic pair). Matches catalogue row I.A i.c. 2 (0.5) exactly."
+          },
+          {
+            "id": "catalogue I.A i.c. 3 (0.5)",
+            "verdict": "confirmed",
+            "detail": "Control using the published 10-digit values; closes. Residual 1.4e-8, independent of tolerance and method (rounding floor). Newton dT = -2e-9, after which the residual is 9e-11. rmin = 0.269. No sub-return (minimum 0.68). |lambda| = 10.1 (unstable). Matches the catalogue row."
+          }
+        ],
+        "issues": "Every entry is a genuine, collisionless periodic orbit of the planar Newtonian problem, and the claimed T is its minimal period. None comes near the 1e-4 refutation threshold: the worst closure is 7.6e-9 (L11@0.25, T = 99, |lambda| = 850). For 17 of the 18 project-refined entries the residual shrinks as the tolerance tightens and the Radau run agrees, so what remains is integration error. The exception is L3@0.5, whose residual stays near 5e-10 at every tolerance; my Newton step closes it to 2e-12 by moving v about 1e-12 and T 1.5e-10. Across all entries my Newton refinement moves v by at most 1e-12 and T by at most 4e-10. Energy, T* and L=P=0 match the claims to machine precision.\n\nCalibration on equal-mass classics: figure-eight, butterfly I, moth I, goggles and yin-yang Ia all close at 6e-12 to 6e-11. Figure-eight and moth I come out linearly stable; the other three come out unstable.\n\nWhat this check does not cover:\n1. Novelty. I can only say no row in the Li & Liao picture tables at m3 = 0.5 or 0.75 has a T* within 0.3 of the claimed L3@0.5, L3@0.75, L4@0.5 or L5@0.5. The claimed v1 values at those masses (0.382 to 0.394 at m3=0.5, 0.571 at m3=0.75) lie above the largest v1 listed at that mass (0.3698 and 0.5663). That fits orbits that sit outside the catalogue's v1 range, but it is not proof they were never found. The tables have no m3 = 0.25 or 0.1 entries at all, so the \"control (catalogued)\" status of L1@0.25 and L2@0.25 cannot be checked against the numeric tables; presumably the word is catalogued at other masses.\n2. Free-group words. I did not compute them. Incidentally, the words given for L3@0.1 and X3@0.25 ('aBaBaBabAbAbAbAB') are a cyclic rotation of the ladder word 'ABaBaBaBabAbAbAb', so they are the same conjugacy class. X3@0.25 is nevertheless a distinct orbit from L3@0.25 (T* 11.718 versus 13.159). Unlike all the L_k and the controls, it lacks the mirror symmetry at T/2.\n3. Stability. Every claimed orbit is linearly unstable. The multipliers form real hyperbolic pairs (m3 = 0.25), complex quartets (L3@0.1, L4@0.1, L4@0.5, L5@0.5) or one elliptic plus one hyperbolic pair (L2@0.25, L3@0.75). Along the m3 = 0.25 ladder, |lambda|max grows steadily with k, from 12 at k=1 to 850 at k=11.\n\nA separate symmetry script (symret.py) that tested only axis-aligned reflections found nothing even for the figure-eight, so it gives no information and I did not use it. I relied on shaperet.py instead."
+      },
+      {
+        "method": "I wrote everything from scratch in /tmp/claude-0/-home-user-elementFi-takehome/abe89a27-8b28-5869-a9f7-5ac0ed0d524d/scratchpad/verify/topology/. The scripts are topo.py, calibrate.py, claims_run.py, catval.py and catsearch.py; per-claim JSON output is in claims_result.json there. I did not use any project code.\n\nIntegration: my own Newtonian right-hand side (G = 1), integrated with scipy DOP853 at rtol = atol = 1e-11 and again at 1e-13, using dense output.\n\nEquator crossings: these are the roots of the signed area (r2-r1)x(r3-r1), which is proportional to n_z of the Li & Liao 2017 shape vector. I verified that identity algebraically. The solver's event detection finds the roots. At each crossing I record which body is in the middle of the line, and the crossing direction from the sign of d(area)/dt.\n\nWindow: the t = 0 start is itself collinear (body 3 in the middle), so I read each word over (ts, ts+T] with ts = half the first crossing time. The gap from closure error is closed by a short arc in the same hemisphere.\n\nWord reading (method A, cut method): stereographic projection from one puncture turns the two equator arcs next to it into rays. Each signed crossing of a ray gives a or b, or their inverses; crossings of the middle segment give nothing. The word is then freely and cyclically reduced. Method B checks method A independently. It does the real stereographic projection of n(t) from the pole puncture and classifies each crossing by where its projected X falls relative to the two puncture images, instead of by which body is in the middle. Words are compared after canonicalizing over cyclic rotations and inversion.\n\nCalibration: I enumerated all 12 conventions (3 pole choices x which arc gives a x which crossing direction is lowercase) and used only the five specified classic orbits from data/periodic_orbits.json. Exactly two conventions reproduce all five words (figure-eight, butterfly I, moth I, goggles, yin-yang Ia). Both have the pole at C12, the collision of the two equal-mass bodies.\n- Convention 1: a = crossing of the arc with body 1 in the middle, b = crossing with body 2 in the middle, lowercase when the area goes from negative to positive. Crossings with body 3 in the middle are ignored.\n- Convention 2: the a<->B mirror of convention 1.\nThe other 10 conventions fail on 1 to 4 of the five orbits.\n\nHold-out checks (not used for calibration):\n- Table a1 equal-mass orbits: 7 of 9 match directly (butterfly II, butterfly III, moth II, moth III, yin-yang Ib, dragonfly, bumblebee).\n- Yarn comes out as (moth I)^3, its known satellite relation.\n- Butterfly IV matches ((ab)2(AB)2)6A((ba)2(BA)2)6B. The printed Table a1 string ((ba)2(AB)2)6A... contains \"aA\", does not freely reduce (it collapses to 50 letters instead of 98), and is evidently a typo.\n- Unequal-mass catalogue: 79 of 79 orbits reproduce their published words under both conventions. They span m3 = 0.5, 0.75, 2 and 4, classes I.A, I.B, I.C, II.A, II.B, II.C and II.D, with T up to 192 and Lf up to 266. I used the catalogue's 10-digit (v1, v2, T). One near-collision orbit (II.A 2 at 0.75) failed to integrate and was skipped.\n\nThen, for every claim, I computed the word under both conventions at both tolerances, with both methods. I also recorded closure residual, number of crossings, minimum shape-sphere distance to each puncture, minimum crossing slope, closure at T/2, T/3 and T/4, and a recomputation of E and Lf.",
+        "controls_ok": true,
+        "claims": [
+          {
+            "id": "L1@0.25",
+            "verdict": "confirmed",
+            "detail": "Control. Computed aBaBAbAb (convention 1) / BaBabAbA (convention 2), both equal to the claimed ABaBabAb up to rotation and inversion. Same result at tolerances 1e-11 and 1e-13 (10 crossings each); methods A and B agree. Closure 5.3e-11. Closest approach to a puncture 0.142. Recomputed E matches exactly."
+          },
+          {
+            "id": "L2@0.25",
+            "verdict": "confirmed",
+            "detail": "Control. Computed aBaBaBAbAbAb, equal to ABaBaBabAbAb up to rotation and inversion, under both conventions and both tolerances (14 crossings). Methods A and B agree. Closure 7.5e-11. Closest approach to a puncture 0.126."
+          },
+          {
+            "id": "L3@0.25",
+            "verdict": "confirmed",
+            "detail": "Computed aBaBaBaBAbAbAbAb, equal to ABaBaBaBabAbAbAb up to rotation and inversion, under both conventions and both tolerances (18 crossings). Methods A and B agree. Closure 1.4e-10. Closest approach to a puncture 0.074 (C12). No closure at T/2, T/3 or T/4 (residuals at least 1.4). The word is not a power of a shorter word."
+          },
+          {
+            "id": "L4@0.25",
+            "verdict": "confirmed",
+            "detail": "Computed aBaBaBaBaBAbAbAbAbAb, equal to the claimed word up to rotation and inversion, under both conventions and both tolerances (22 crossings). Methods A and B agree. Closure 5.0e-10. Closest approach to a puncture 0.064."
+          },
+          {
+            "id": "L5@0.25",
+            "verdict": "confirmed",
+            "detail": "Computed aBaBaBaBaBaBAbAbAbAbAbAb, matching the claimed word, under both conventions and both tolerances (26 crossings). Methods A and B agree. Closure 3.1e-10. Closest approach to a puncture 0.052."
+          },
+          {
+            "id": "L6@0.25",
+            "verdict": "confirmed",
+            "detail": "Computed word matches the claimed word (Lf 28) under both conventions and both tolerances (30 crossings). Methods A and B agree. Closure 1.8e-9. Closest approach to a puncture 0.047."
+          },
+          {
+            "id": "L7@0.25",
+            "verdict": "confirmed",
+            "detail": "Computed word matches the claimed word (Lf 32) under both conventions and both tolerances (34 crossings). Methods A and B agree. Closure 2.8e-9. Closest approach to a puncture 0.042."
+          },
+          {
+            "id": "L8@0.25",
+            "verdict": "confirmed",
+            "detail": "Computed word matches the claimed word (Lf 36) under both conventions and both tolerances (38 crossings). Methods A and B agree. Closure 5.0e-9. Closest approach to a puncture 0.038."
+          },
+          {
+            "id": "L9@0.25",
+            "verdict": "confirmed",
+            "detail": "Computed word matches the claimed word (Lf 40) under both conventions and both tolerances (42 crossings). Methods A and B agree. Closure 9.5e-9. Closest approach to a puncture 0.035."
+          },
+          {
+            "id": "L10@0.25",
+            "verdict": "confirmed",
+            "detail": "Computed word matches the claimed word (Lf 44) under both conventions and both tolerances (46 crossings). Methods A and B agree. Closure 1.3e-8. Closest approach to a puncture 0.033."
+          },
+          {
+            "id": "L11@0.25",
+            "verdict": "confirmed",
+            "detail": "Computed word matches the claimed word (Lf 48) under both conventions and both tolerances (50 crossings). Methods A and B agree. Closure 2.2e-8 at tolerance 1e-13 and 2.4e-6 at 1e-11. Closest approach to a puncture 0.031. Crossings are transversal (|dA/dt| at least 1.9)."
+          },
+          {
+            "id": "X3@0.25",
+            "verdict": "confirmed",
+            "detail": "Computed aBaBaBaBAbAbAbAb, which is literally the same reduced word as L3@0.25 and equals the claimed aBaBaBabAbAbAbAB up to rotation and inversion. Same result under both conventions and both tolerances (18 crossings); methods A and B agree. Closure 2.0e-9. Closest approach 0.026 (to C13 and C23); minimum crossing slope 0.55, still transversal. The word claim holds. Caveat: Li & Liao count orbits sharing a word as one family, so X3 is the same topological family as L3, not a new one, even though its T, E and T* differ (T* 11.72 vs 13.16)."
+          },
+          {
+            "id": "L4@0.1",
+            "verdict": "confirmed",
+            "detail": "Computed aBaBaBaBaBAbAbAbAbAb, equal to the claimed aBaBaBaBabAbAbAbAbAB up to rotation and inversion. Same result under both conventions and both tolerances (22 crossings); methods A and B agree. Closure 1.4e-9. Closest approach 0.0117 (C12), the tightest of all claims but still far above any integration error."
+          },
+          {
+            "id": "L3@0.1",
+            "verdict": "confirmed",
+            "detail": "Computed aBaBaBaBAbAbAbAb, equal to the claimed aBaBaBabAbAbAbAB up to rotation and inversion. Same result under both conventions and both tolerances (18 crossings); methods A and B agree. Closure 9.3e-11. Closest approach 0.0137 (C12)."
+          },
+          {
+            "id": "L3@0.5",
+            "verdict": "confirmed",
+            "detail": "Computed aBaBaBaBAbAbAbAb, matching the claimed word, under both conventions and both tolerances (18 crossings). Methods A and B agree. Closure 1.3e-9. Closest approach 0.229. No catalogue word at m3 = 0.5 (or anywhere in the local catalogue) is equivalent, even allowing a<->b, a<->A or a<->B."
+          },
+          {
+            "id": "L3@0.75",
+            "verdict": "confirmed",
+            "detail": "Computed aBaBaBaBAbAbAbAb, matching the claimed word, under both conventions and both tolerances (18 crossings). Methods A and B agree. Closure 1.4e-9. Closest approach 0.289. No equivalent word in the local catalogue."
+          },
+          {
+            "id": "L4@0.5",
+            "verdict": "confirmed",
+            "detail": "Computed aBaBaBaBaBAbAbAbAbAb, matching the claimed word, under both conventions and both tolerances (22 crossings). Methods A and B agree. Closure 1.4e-9. Closest approach 0.198. No equivalent word in the local catalogue."
+          },
+          {
+            "id": "L5@0.5",
+            "verdict": "confirmed",
+            "detail": "Computed aBaBaBaBaBaBAbAbAbAbAbAb, matching the claimed word, under both conventions and both tolerances (26 crossings). Methods A and B agree. Closure 1.9e-9. Closest approach 0.164. No equivalent word in the local catalogue."
+          },
+          {
+            "id": "catalogue I.A i.c. 2 (0.5)",
+            "verdict": "confirmed",
+            "detail": "Control, using the catalogue's 10-digit initial conditions. Computed aBaBAbAb, equal to the catalogue's BaBabAbA and the claimed ABaBabAb up to rotation and inversion, under both conventions and both tolerances. Closure 2.9e-8."
+          },
+          {
+            "id": "catalogue I.A i.c. 3 (0.5)",
+            "verdict": "confirmed",
+            "detail": "Control. Computed aBaBaBAbAbAb, equal to the catalogue's BaBaBabAbAbA up to rotation and inversion, under both conventions and both tolerances. Closure 4.1e-8."
+          }
+        ],
+        "issues": "The topology part of the claims holds. Every one of the 20 entries reproduces its claimed word up to cyclic rotation and inversion. This holds under both conventions that survive calibration, at both tolerances, with identical crossing counts, and the two independent word-reading methods agree everywhere. The ladder words come out exactly as A(Ba)^k B a(bA)^k b with Lf = 4k+4. All curves stay well away from the punctures (closest approach 0.0117 or more) with transversal crossings, so the words are numerically robust.\n\nCaveats:\n(1) A topology check cannot tell apart different orbits that share a word. X3@0.25 has exactly the same reduced word as L3@0.25. Li & Liao treat orbits with the same word as one family (for example moth I and yarn), so X3 is a second orbit with a known word, not a new topological family, by their counting.\n(2) The local catalogue has no m3 = 0.25 or m3 = 0.1 entries; its unequal-mass masses are 0.5, 0.75, 2, 4, 5, 8 and 10. \"Catalogued\" for L1@0.25 and L2@0.25 therefore means only that their words appear at other masses: k = 1 at m3 = 1, 0.5 and 0.75, and k = 2 only at m3 = 0.5.\n(3) I searched all 2,360 local catalogue words (equal-mass, unequal-mass and free-fall), allowing rotation, inversion and the relabelings a<->b, a<->A and a<->B. No k >= 3 ladder word appears. However, the local copy does not contain Li et al. 2021's set of 135,445 arbitrary-mass orbits, so this is not proof of novelty against that set.\n(4) Li & Liao 2017 Table a1 prints butterfly IV in a form that does not freely reduce (it contains \"aA\"); the corrected ((ab)2(AB)2)6A((ba)2(BA)2)6B matches my computation exactly. Yarn reads as (moth I)^3, its known satellite relation.\n(5) Two calibrated conventions survive: pole at C12, plus its a<->B mirror. They agree on every claim, so this leaves no ambiguity.\n(6) One catalogue validation orbit (II.A 2 at m3 = 0.75) could not be integrated because of a near-collision. It does not affect any claim."
+      },
+      {
+        "method": "I wrote my own code in /tmp/claude-0/-home-user-elementFi-takehome/abe89a27-8b28-5869-a9f7-5ac0ed0d524d/scratchpad/verify/novelty/ and ran it with python3 -I. Nothing under /home/user/three-body-problem was modified or imported; claims.json was copied to claims_copy.json first.\n(1) Parser (parse_cat.py, output cat.json). It reads the Li & Liao tables. Counts match the README: 695 equal-mass words, 1349 unequal-mass words (m3 = 0.5, 0.75, 2, 4, 5, 8, 10; none below 0.5) and 316 free-fall words, each with its numeric table. All 2044 catalogue T* values were recomputed from (m3, v1, v2, T) with my own energy formula, and none disagree.\n(2) Word comparison (compare_words.py) against all 2360 catalogued words. A canonical key is the lexicographic minimum over every cyclic rotation, with and without reversal, under all 8 letter maps generated by a<->A, b<->B and a<->b (so inversion is included). Cyclic free reduction and primitive-root/power matches are also checked.\n(3) Pattern scan (ladder_scan.py) for words of the form X^n Y^n made of 2-letter syllables. which_map.py lists exactly which transformations link two words.\n(4) Numeric check (numeric_cmp.py): for each claim, catalogue entries at the same m3 with T* within 1% or both velocities within 1e-3, plus the nearest entries in velocity. cmp3d.py checks the 10,332-row 3D and piano-trio initial-condition files; the near-planar rows are those with |z0| and |vz| < 0.02. The non-hierarchical (single word bABabaBAba, other slice) and roadmap/BHH data were inspected and are not comparable.\n(5) Literature. I grepped the extracted texts of all 5 Li-Liao papers. WebSearch could not run: the shared budget of 200 searches per turn was already used up by other agents. WebFetch failed DNS for three-body.ipb.ac.rs and arxiv.org. No other literature was read.\nKey structural fact: every claimed ladder word is, up to rotation, P_n = (Ba)^n(bA)^n with n = k+1 in Li-Liao convention, which is (aB)^n(Ab)^n in Suvakov-Dmitrasinovic convention. X3@0.25 and L3@0.1 are P4 and L4@0.1 is P5, all exactly (rotation only). The catalogue contains P_n only for n = 1, 2, 3, at m3 = 0.5, 0.75 and 1.\nThe catalogue also contains a second word ladder, Q_n = (BA)^n(ba)^n and its rotations, with n = 2 (m3 = 1, 2), 3 (m3 = 2, 4), 6 (m3 = 4), 16 and 17 (m3 = 10). Q_n is equivalent to P_n only through a single case swap (a<->A alone or b<->B alone, possibly combined with reversal and a<->b). The catalogue itself lists P2 (equal-mass I.A.3, T* = 15.05) and Q2 (equal-mass I.A.2 = butterfly I, T* = 19.93) as different orbits.",
+        "controls_ok": true,
+        "claims": [
+          {
+            "id": "L1@0.25",
+            "verdict": "refuted",
+            "detail": "CONTROL, behaved as expected: it was found. The word ABaBabAb = P2 is an exact rotation-only match to I.A i.c. 2 (0.5) BaBabAbA, I.A i.c. 2 (0.75) and equal-mass I.A i.c. 3. Under the generous rule it also matches Q2 (equal-mass I.A.2, I.A.1(2)). There is no catalogue entry at m3 = 0.25, so there was no numeric check."
+          },
+          {
+            "id": "L2@0.25",
+            "verdict": "refuted",
+            "detail": "CONTROL, behaved as expected: it was found. ABaBaBabAbAb = P3 is an exact rotation-only match to I.A i.c. 3 (0.5) BaBaBabAbAbA. Under the generous rule it also matches BABabababABA (I.A.2(2), I.A.1(4)). There is no catalogue entry at m3 = 0.25."
+          },
+          {
+            "id": "L3@0.25",
+            "verdict": "inconclusive",
+            "detail": "The word P4 (canon ABABABABabababab) has no match in any of the 2360 catalogued words under the full generous equivalence. There are no catalogue entries at m3 = 0.25 and no 3D entries at 0.25. It is absent from everything I could check, but the literature search could not be done (WebSearch budget used up, WebFetch DNS failures). Sources not checked that might contain it: the Suvakov-Dmitrasinovic online gallery (three-body.ipb.ac.rs), Hudomal 2015 thesis, Suvakov & Dmitrasinovic PLA 379 (2015) 1939, Dmitrasinovic-Hudomal-Shibayama-Sugita J.Phys.A 51 (2018) 315101, Hristov et al. 2022-2025 papers, and any 2019-2026 unequal-mass isosceles-slice catalogue."
+          },
+          {
+            "id": "L4@0.25",
+            "verdict": "inconclusive",
+            "detail": "The word P5 has no catalogue match under any allowed equivalence, and there are no catalogue entries at m3 = 0.25. The literature could not be searched; the same unread sources as for L3@0.25 apply."
+          },
+          {
+            "id": "L5@0.25",
+            "verdict": "refuted",
+            "detail": "MATCHES ONLY UNDER THE GENEROUS RULE. The claimed word P6 = ABaBaBaBaBaBabAbAbAbAbAb has the same generous canonical key as I.A i.c. 2 (m3 = 4) BABABAbabababababaBABABA (Q6, L = 24). That link needs a single case swap (a<->A only or b<->B only, optionally with reversal and a<->b). With identity, inversion, a<->b and rotation alone, P6 is NOT catalogued. The catalogued orbit is physically different: m3 = 4, v = (0.9912, 0.7119), T = 17.65, T* = 276.9, against the claim's m3 = 0.25, T* = 20.01. The same kind of swap separates the catalogue's own distinct equal-mass orbits I.A.3 and I.A.2. Read strictly, this would be 'inconclusive' for the same reasons as L3@0.25."
+          },
+          {
+            "id": "L6@0.25",
+            "verdict": "inconclusive",
+            "detail": "The word P7 (L = 28) has no catalogue match under any equivalence, and there are no entries at m3 = 0.25. The literature could not be searched; same unread sources as for L3@0.25."
+          },
+          {
+            "id": "L7@0.25",
+            "verdict": "inconclusive",
+            "detail": "The word P8 (L = 32) has no catalogue match, and there are no entries at m3 = 0.25. The literature could not be searched."
+          },
+          {
+            "id": "L8@0.25",
+            "verdict": "inconclusive",
+            "detail": "The word P9 (L = 36) has no catalogue match, and there are no entries at m3 = 0.25. The literature could not be searched."
+          },
+          {
+            "id": "L9@0.25",
+            "verdict": "inconclusive",
+            "detail": "The word P10 (L = 40) has no catalogue match, and there are no entries at m3 = 0.25. The literature could not be searched."
+          },
+          {
+            "id": "L10@0.25",
+            "verdict": "inconclusive",
+            "detail": "The word P11 (L = 44) has no catalogue match, and there are no entries at m3 = 0.25. The literature could not be searched."
+          },
+          {
+            "id": "L11@0.25",
+            "verdict": "inconclusive",
+            "detail": "The word P12 (L = 48) has no catalogue match. The catalogue's longer Q-type words, Q16 (II.A.1(10)) and (AB)^17(ab)^17 (I.A.1(10)), have different lengths and do not match. There are no entries at m3 = 0.25. The literature could not be searched."
+          },
+          {
+            "id": "X3@0.25",
+            "verdict": "inconclusive",
+            "detail": "The word aBaBaBabAbAbAbAB is exactly P4 by rotation, the same as L3@0.25. It is a separate orbit: T* = 11.72 against 13.16, v2 = 0.0307 against 0.1022. Neither the word nor any orbit at m3 = 0.25 is in the catalogues. The literature could not be searched; same unread sources as for L3@0.25."
+          },
+          {
+            "id": "L3@0.1",
+            "verdict": "inconclusive",
+            "detail": "The word is P4 by rotation, with no catalogue match. The unequal-mass catalogue has no entries at m3 = 0.1. The 3D catalogue's 11 orbits at m3 = 0.1 are all clearly non-planar (nearest (vx, vy) is 0.023 away with z0 = 0.26). The literature could not be searched."
+          },
+          {
+            "id": "L4@0.1",
+            "verdict": "inconclusive",
+            "detail": "The word is P5 by rotation, with no catalogue match. There are no planar catalogue entries at m3 = 0.1, and the nearest 3D entry is clearly non-planar (z0 = 0.26). The literature could not be searched."
+          },
+          {
+            "id": "L3@0.5",
+            "verdict": "inconclusive",
+            "detail": "The word P4 has no match. Numeric check at m3 = 0.5 (565 entries): nothing with T* within 1% and nothing with velocities within 1e-3. The nearest is I.A i.c. 3 (0.5), dv = 0.013, which is P3 with T* = 13.10. The 3D entries at 0.5 are all at least 0.09 away. Absent from Li-Liao 2018, even though this orbit (T = 38.3, v in [0,1]^2) lies inside that paper's stated search window (4000x4000 grid, T <= 200). The literature could not be searched."
+          },
+          {
+            "id": "L3@0.75",
+            "verdict": "inconclusive",
+            "detail": "The word P4 has no match. Numeric check at m3 = 0.75 (401 entries): nothing with T* within 1% and nothing with velocities within 1e-3. The nearest is I.A i.c. 2 (0.75), dv = 0.038, which is P2 with T* = 12.11. The orbit lies inside the Li-Liao 2018 search window (T = 68.7) but is not listed. The literature could not be searched."
+          },
+          {
+            "id": "L4@0.5",
+            "verdict": "inconclusive",
+            "detail": "The word P5 has no match. Two catalogue entries fall within 1% in T*: I.B i.c. 6 (0.5), T* = 20.457 (0.78% off), word BabABAbaBAbaBABabA of length 18, v = (0.268, 0.025); and II.C i.c. 7 (0.5), T* = 20.500 (0.57% off), word BabAbaBabAbaBabA of length 16, v = (0.055, 0.370). Both words differ from P5 and the velocities are more than 0.1 away, so these are different orbits. No entry has velocities within 1e-3; the nearest is I.A.3(0.5), dv = 0.020. The literature could not be searched."
+          },
+          {
+            "id": "L5@0.5",
+            "verdict": "refuted",
+            "detail": "MATCHES ONLY UNDER THE GENEROUS RULE, the same case as L5@0.25. The word P6 matches I.A i.c. 2 (m3 = 4) Q6 BABABAbabababababaBABABA only through a single case swap; strictly it is not catalogued. Numerically, II.C i.c. 13 (0.5) has T* = 24.471 (0.94% off) but word BaBaBabAbAbaBaBabAbAbA of length 22 and dv = 0.086, so it is a different orbit. No entry has velocities within 1e-3. Read strictly, this would be 'inconclusive'."
+          },
+          {
+            "id": "catalogue I.A i.c. 2 (0.5)",
+            "verdict": "refuted",
+            "detail": "CONTROL: found exactly. Same label, same 10-digit velocities and T, T* = 9.063, and the word matches by rotation alone."
+          },
+          {
+            "id": "catalogue I.A i.c. 3 (0.5)",
+            "verdict": "refuted",
+            "detail": "CONTROL: found exactly. Same label, same velocities and T, T* = 13.095, and the word matches by rotation alone. A different orbit, II.C.1(0.5) with T* = 13.225, also falls within 1% in T*, which shows that a T* match alone does not identify an orbit."
+          }
+        ],
+        "issues": "1. LITERATURE SEARCH NOT PERFORMED. WebSearch refused every query because the shared budget of 200 searches per turn was already used up by other agents. WebFetch could not resolve three-body.ipb.ac.rs or arxiv.org. The only literature checked was the local extracted text of the 5 Li-Liao papers. That is the sole reason the strictly-unmatched claims are 'inconclusive' rather than 'confirmed'. A follow-up turn with fresh search budget should look for: the words themselves; '(aB)^n(Ab)^n', the Suvakov-Dmitrasinovic-convention form of the ladder; sequences in Suvakov & Dmitrasinovic PLA 2015 and Dmitrasinovic et al. J.Phys.A 2018; the IPB gallery; Hristov et al.; and post-2018 unequal-mass work with m3 < 0.5.\n2. The L5 refutations are artifacts of the generous a<->A / b<->B rule. Under the symmetries the catalogue itself respects (it lists P2 and Q2 as distinct orbits), no claimed word with n >= 4 appears anywhere in the catalogues.\n3. Weaker novelty for the 'ladder' idea. Words of the shape X^n Y^n with large n are already catalogued as the Q-type ladder (BA)^n(ba)^n: n = 2, 3, 6 at m3 = 1, 2 and 4, and n = 16, 17 at m3 = 10. The P-type ladder itself is catalogued for n = 1-3 at m3 = 0.5, 0.75 and 1 (PASJ 2018 Fig. 2 even shows BaBabAbA across m3 = 0.5, 0.75, 1). A write-up should not present 'an infinite ladder of words' as a new kind of structure; the new part is P_n for n >= 4, plus orbits at m3 < 0.5.\n4. Warning sign for the numerical verifiers. L3@0.5, L4@0.5, L5@0.5 and L3@0.75 (T = 38 to 69, |v| < 1) lie inside the Li-Liao 2018 search window (grid over v in [0,1]^2, T <= 200) yet were not reported, while P1 to P3 were. That does not make them known, but they need an independent periodicity and collision check.\n5. No catalogue entries exist in this slice at m3 = 0.25 or 0.1, so the claims there could not be compared numerically. The 3D, piano-trio, non-hierarchical and roadmap files are different slices; their near-planar 3D rows do not match any claim."
+      }
+    ],
+    "judgement": "Final skeptic verdicts (claims file: /home/user/three-body-problem/research/results/claims.json)\n\nAll 16 claimed-new entries SURVIVE and both controls behave as expected. They come to 9 new words (P4 to P12), not 16 new families. Their novelty rests only on the Li & Liao corpus, because no literature search was possible: the web-search budget was used up for this turn, and I did not work around it.\n\nid | verdict | reason\nL1@0.25 | SURVIVES (control) | Real orbit with the right word (P2 = (Ba)^2(bA)^2). That word is catalogued at m3 = 0.5, 0.75 and 1, but no orbit at m3 = 0.25 is listed, so it is a known word at a new mass.\nL2@0.25 | SURVIVES (control) | Real orbit with the right word (P3). That word is catalogued only at m3 = 0.5 (I.A i.c.3 (0.5)), not at m3 = 1 as the novelty verifier said.\nL3@0.25 | SURVIVES | Closes to 2.5e-11, Newton shift 1e-14, both word-reading methods agree. P4 is absent from all 2360 catalogue words under the physical symmetries; Suvakov–Dmitrasinovic, Hristov et al. and post-2018 work are unread.\nL4@0.25 | SURVIVES | Closes to 2e-10 and the P5 word is confirmed. P5 is absent from the catalogue under the physical symmetries; same unread sources.\nL5@0.25 | SURVIVES | The novelty \"refuted\" verdict is wrong (see mistake 1). P6 matches I.A i.c.2 (m3 = 4) only through a single case swap, which is not a symmetry, and that orbit has T* = 276.9 against 20.0 here.\nL6@0.25 | SURVIVES | Closes to 7e-10, word P7 (Lf 28), not catalogued.\nL7@0.25 | SURVIVES | Closes to 1e-9, word P8, not catalogued.\nL8@0.25 | SURVIVES | Closes to 2e-9, word P9, not catalogued.\nL9@0.25 | SURVIVES | Closes to 3e-9, word P10, not catalogued.\nL10@0.25 | SURVIVES | Closes to 5e-9, word P11, not catalogued.\nL11@0.25 | SURVIVES | Closes to 7.6e-9, which is reasonable for T = 99 and \\|lambda\\| = 850; the residual shrinks with tolerance and Newton converges. Word P12, not catalogued.\nX3@0.25 | SURVIVES (as a new orbit, not a new word) | A distinct orbit (T* 11.718 vs 13.159 for L3) with the same P4 word as L3@0.25, so it adds no new family. It needs a second listing in the slice (see mistake 3).\nL3@0.1 | SURVIVES | Near-collision (rmin 0.025, shape-sphere distance 0.014) but numerically robust: transversal crossings, closes to 3e-11. Word P4; the planar catalogue has no entries at m3 = 0.1.\nL4@0.1 | SURVIVES | Same situation (rmin 0.027, shape-sphere distance 0.012), closes to 4e-10, word P5. Its multipliers form a complex quartet, so it is unstable.\nL3@0.5 | SURVIVES (flagged) | Real orbit (Newton closes it to 2e-12) with word P4, not catalogued. It lies inside Li-Liao 2018's stated search window (v in [0,1]^2, 4000x4000 grid, integration to T0 = 200) yet is missing. It continues their I.A i.c.1-3 (0.5) sequence smoothly: v1 rises 0.287, 0.342, 0.370, then 0.382; T goes 13.9, 25.9, then 38.3. Their search missed it; nothing contradicts it.\nL3@0.75 | SURVIVES (flagged) | Same as L3@0.5: inside the 2018 window, continues I.A i.c.2 (0.75), word P4, no T* within 1% of any catalogue row.\nL4@0.5 | SURVIVES (flagged) | Word P5. The two catalogue rows within 1% in T* have Lf 18 and 16, words that are not P5, and velocities more than 0.1 away. A shared orbit would match T* to many digits, not 0.6%.\nL5@0.5 | SURVIVES (flagged) | The novelty \"refuted\" verdict is wrong, as for L5@0.25. The nearest row in T* (II.C i.c.13 (0.5), 0.94% off) has a different word and Lf.\ncatalogue I.A i.c.2 (0.5) | SURVIVES (control) | Reproduced exactly; its residual floor comes from the published 10-digit values.\ncatalogue I.A i.c.3 (0.5) | SURVIVES (control) | Reproduced exactly.\n\nMistakes in the verifiers' reasoning\n\n1. **The novelty verifier's \"generous\" matching is wrong, so its L5 refutations fail.** Its 8 letter maps include single case swaps (a<->A alone, b<->B alone), and no physical symmetry produces those. Within one convention, a mirror reflection flips both crossing directions (a<->A and b<->B together), time reversal inverts the word, and swapping the equal-mass bodies 1 and 2 gives a<->B, b<->A. Together with rotation these form the whole symmetry group.\n   - The generous rule also merges catalogue entries that Li & Liao list as different orbits: equal-mass I.A.3 (P2) and butterfly I (I.A.2, Q2).\n   - My own check (words.py) confirms P4 to P13 have no match in any of the 2360 catalogue words under the physical group. Only P6 picks up a match, I.A i.c.2 (4), and only under the generous rule.\n\n2. **The topology verifier's caveat (3) is unfounded.** It worried that Li et al. 2021's set of 135,445 orbits was not checked. The local text of that paper (2021-SCPMA, lines 24, 164 and 231) shows it is one family, all with the moth-I word bABabaBAba, started from a different collinear slice. It cannot contain any P_n.\n   - Its search, as described (\"allowing a<->A\"), should also have found the false P6 match and did not. So it must in fact have used the physical symmetries. The verdicts are not affected.\n\n3. **The numerics verifier's statement that X3 is \"in a different symmetry class\" is overstated.** Every orbit started in this slice is time-reversal symmetric, so it lands in the slice again at T/2. My check (half.py) shows X3 does so to within 1e-10, but at a scale of 0.8905 instead of 1. Every L_k comes back at scale 1.0000.\n   - So X3 has a second, different starting point (v1', v2', T') in the slice with the same T*. A write-up should list it, or it will later be counted twice.\n\n4. **Residual thresholds were not judged too strictly or too loosely.** Every residual (1e-11 to 8e-9) is far below the threshold, shrinks as tolerance tightens, and Newton converges with steps of at most 4e-10. The topology verifier's calibration is sound: 5 of 5 classic orbits, 7 of 9 held-out equal-mass orbits plus yarn and the corrected butterfly IV, and 79 of 79 unequal-mass orbits.\n\nWeaknesses that affect all claims\n\n1. **No literature search.** Novelty was checked only against the local Li-Liao GitHub catalogue and their 5 papers. These sources are unread:\n   - Suvakov & Dmitrasinovic: the PRL 2013 paper, Am. J. Phys. 2014, PLA 2015 (topological dependence of Kepler's third law) and the IPB online gallery.\n   - Suvakov 2014 (CMDA), the search around the figure-eight.\n   - Dmitrasinovic et al., J. Phys. A 2018.\n   - Hristov et al., 2022 to 2025 (high-precision searches).\n   - Any unequal-mass work after 2018 with m3 < 0.5.\n\n   One finding of P_n with n >= 4 at any mass would turn every claim from \"new family\" into \"new mass of a known family\".\n2. **The catalogue is visibly incomplete.** Li & Liao 2018 missed L3/L4/L5@0.5 and L3@0.75 even though they sit inside its own search window. So \"not in the catalogue\" is weak evidence that nobody else has found these words, since an obvious gap like this invites other groups to fill it.\n3. **The count overstates.** The 16 claimed entries are 9 new words: P4 is shared by L3 at four masses plus X3, P5 by three entries, P6 by two. The claims file itself counts L1 and L2@0.25 as \"catalogued\" because their words appear at other masses; by that rule, the m3 = 0.1, 0.5 and 0.75 rungs are new masses of the new m3 = 0.25 families. Two features are also not new: ladders of words (the Q ladder is catalogued up to n = 17) and T* growing linearly with word length (T* rises about 3.3 to 3.45 per rung). The second is the known topological dependence of Kepler's third law.\n4. **Existence is shown numerically, not proven.** All three checks used double precision. None used Li-Liao's high-precision method (CNS), interval arithmetic, or an error bound with Jacobian conditioning for the Newton step. That makes existence very credible, especially for the most unstable entries (X3, \\|lambda\\| = 1219; L11, 850), but not proven. All claims are linearly unstable. The stability calibration was not compared against any published stability labels.\n\nMy scripts are in /tmp/claude-0/-home-user-elementFi-takehome/abe89a27-8b28-5869-a9f7-5ac0ed0d524d/scratchpad/verify/skeptic/: words.py (word matching against the catalogue under the physical symmetries), half.py (closure and the T/2 return to the slice) and claims_copy.json."
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Verify"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Judge"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "verify:numerics",
+      "phaseIndex": 1,
+      "phaseTitle": "Verify",
+      "agentId": "a58fd0f6272a9de26",
+      "model": "claude-opus-5-5",
+      "state": "done",
+      "startedAt": 1792123467360,
+      "queuedAt": 1792123467326,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "I wrote my own code from scratch in /tmp/claude-0/-home-use…",
+      "promptPreview": "We claim to have found NEW periodic orbits of the planar Newtonian three-body problem (G = 1) in the isosceles-collinear initial-condition slice used by Suvakov & Dmitrasinovic (2013) and the Li & Liao catalogues: masses m1 = m2 = 1, m3 given; r1 = (-1,0), r2 = (1,0), r3 = (0,0); velocities v1 = v2 = (v1, v2), v3 = -2 (v1, v2)/m3 (zero momentum, zero angular momentum); period T.\nClaims file (JSON …",
+      "promptFramed": true,
+      "lastProgressAt": 1792124084516,
+      "tokens": 124608,
+      "toolCalls": 28,
+      "durationMs": 617154,
+      "resultPreview": "{\"method\":\"I wrote my own code from scratch in /tmp/claude-0/-home-user-elementFi-takehome/abe89a27-8b28-5869-a9f7-5ac0ed0d524d/scratchpad/verify/numerical/. I did not use the project's solver or topology code, and I modified nothing under /home/user/three-body-problem.\\n\\n- nb.py: planar Newtonian right-hand side with G=1 and no regularization, plus helpers for the slice initial condition, energy…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "verify:topology",
+      "phaseIndex": 1,
+      "phaseTitle": "Verify",
+      "agentId": "a6a08c78311664ec7",
+      "model": "claude-opus-5-5",
+      "state": "done",
+      "startedAt": 1792123467360,
+      "queuedAt": 1792123467326,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "I wrote everything from scratch in /tmp/claude-0/-home-user…",
+      "promptPreview": "We claim to have found NEW periodic orbits of the planar Newtonian three-body problem (G = 1) in the isosceles-collinear initial-condition slice used by Suvakov & Dmitrasinovic (2013) and the Li & Liao catalogues: masses m1 = m2 = 1, m3 given; r1 = (-1,0), r2 = (1,0), r3 = (0,0); velocities v1 = v2 = (v1, v2), v3 = -2 (v1, v2)/m3 (zero momentum, zero angular momentum); period T.\nClaims file (JSON …",
+      "promptFramed": true,
+      "lastProgressAt": 1792124600132,
+      "tokens": 133111,
+      "toolCalls": 21,
+      "durationMs": 1130514,
+      "resultPreview": "{\"method\":\"I wrote everything from scratch in /tmp/claude-0/-home-user-elementFi-takehome/abe89a27-8b28-5869-a9f7-5ac0ed0d524d/scratchpad/verify/topology/. The scripts are topo.py, calibrate.py, claims_run.py, catval.py and catsearch.py; per-claim JSON output is in claims_result.json there. I did not use any project code.\\n\\nIntegration: my own Newtonian right-hand side (G = 1), integrated with sc…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "verify:novelty",
+      "phaseIndex": 1,
+      "phaseTitle": "Verify",
+      "agentId": "af3a97e7860b89857",
+      "model": "claude-opus-5-5",
+      "state": "done",
+      "startedAt": 1792124086428,
+      "queuedAt": 1792123467326,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "I wrote my own code in /tmp/claude-0/-home-user-elementFi-t…",
+      "promptPreview": "We claim to have found NEW periodic orbits of the planar Newtonian three-body problem (G = 1) in the isosceles-collinear initial-condition slice used by Suvakov & Dmitrasinovic (2013) and the Li & Liao catalogues: masses m1 = m2 = 1, m3 given; r1 = (-1,0), r2 = (1,0), r3 = (0,0); velocities v1 = v2 = (v1, v2), v3 = -2 (v1, v2)/m3 (zero momentum, zero angular momentum); period T.\nClaims file (JSON …",
+      "promptFramed": true,
+      "lastProgressAt": 1792124605213,
+      "tokens": 152511,
+      "toolCalls": 29,
+      "durationMs": 518781,
+      "resultPreview": "{\"method\":\"I wrote my own code in /tmp/claude-0/-home-user-elementFi-takehome/abe89a27-8b28-5869-a9f7-5ac0ed0d524d/scratchpad/verify/novelty/ and ran it with python3 -I. Nothing under /home/user/three-body-problem was modified or imported; claims.json was copied to claims_copy.json first.\\n(1) Parser (parse_cat.py, output cat.json). It reads the Li & Liao tables. Counts match the README: 695 equal…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 4,
+      "label": "judge",
+      "phaseIndex": 2,
+      "phaseTitle": "Judge",
+      "agentId": "a001c665733a368be",
+      "model": "claude-opus-5-5",
+      "state": "done",
+      "startedAt": 1792124606942,
+      "queuedAt": 1792124606938,
+      "attempt": 1,
+      "lastToolName": "Bash",
+      "lastToolSummary": "cat > /tmp/claude-0/-home-user-elementFi-takehome/abe89a27-…",
+      "promptPreview": "We claim to have found NEW periodic orbits of the planar Newtonian three-body problem (G = 1) in the isosceles-collinear initial-condition slice used by Suvakov & Dmitrasinovic (2013) and the Li & Liao catalogues: masses m1 = m2 = 1, m3 given; r1 = (-1,0), r2 = (1,0), r3 = (0,0); velocities v1 = v2 = (v1, v2), v3 = -2 (v1, v2)/m3 (zero momentum, zero angular momentum); period T.\nClaims file (JSON …",
+      "promptFramed": true,
+      "lastProgressAt": 1792124992723,
+      "tokens": 114259,
+      "toolCalls": 12,
+      "durationMs": 385780,
+      "resultPreview": "Final skeptic verdicts (claims file: /home/user/three-body-problem/research/results/claims.json)\n\nAll 16 claimed-new entries SURVIVE and both controls behave as expected. They come to 9 new words (P4 to P12), not 16 new families. Their novelty rests only on the Li & Liao corpus, because no literature search was possible: the web-search budget was used up for this turn, and I did not work around it…"
+    }
+  ],
+  "totalTokens": 524489,
+  "totalToolCalls": 90
+}

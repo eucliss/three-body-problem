@@ -1,0 +1,5 @@
+[
+  {"id": "L1@0.75", "k": 1, "m3": 0.75, "v1": 0.5337490176918861, "v2": 0.30416746070308054, "T": 25.04603823852195, "Tstar": 12.114315273866424, "word": "ABaBabAb", "via": "continuation of rung 1 from m3 = 0.25", "published": {"source": "Li, Jing & Liao 2018, I.A i.c. 2 (m3 = 0.75)", "v1": 0.5337490177, "v2": 0.3041674607, "T": 25.0460382386}},
+  {"id": "L1@1", "k": 1, "m3": 1, "v1": 0.6150407228753721, "v2": 0.5226158544433213, "T": 37.32052359687224, "Tstar": 15.048366240413532, "word": "ABaBabAb", "via": "continuation of rung 1 from m3 = 0.25", "published": {"source": "Li & Liao 2017, I.A i.c. 3 (equal masses)", "v1": 0.6150407229, "v2": 0.5226158545, "T": 37.3205235945}},
+  {"id": "L2@0.75", "k": 2, "m3": 0.75, "v1": 0.5593298497582075, "v2": 0.3101186236950732, "T": 46.61954803890244, "Tstar": 16.494733152810014, "word": "ABaBaBabAbAb", "via": "continuation of rung 2 from m3 = 0.25", "published": null, "note": "word catalogued at m3 = 0.5 (I.A i.c. 3); not listed at m3 = 0.75"}
+]

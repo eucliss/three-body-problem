@@ -4,10 +4,15 @@ The general equation for three (or N) gravitating bodies, a solver that integrat
 
 **Try it:** [live page](https://claude.ai/artifact/LK3dio2XDdDQX8LUewuca7), or open [`web/dist/index.html`](web/dist/index.html) in a browser. It is one self-contained file: the solver, the equations and the fate-map data are all inside it.
 
+## New: the Three-Body Ladder
+
+[`research/`](research/) contains a systematic search for new periodic orbits with two equal masses and a lighter third. It found a family where, on rung k, the heavy pair winds around each other k times and then unwinds. Rungs 3 to 11 (words (Ba)ⁿ(bA)ⁿ, n = 4…12) are absent from every catalogue we could check. There are 23 new orbits at seven masses, each confirmed by an independent integrator. See the [findings page](https://claude.ai/artifact/8jFqA4o72NgABXAKKGE3kR) and [`research/README.md`](research/README.md).
+
 ## Layout
 
 | Path | What it is |
 |---|---|
+| `research/` | the ladder search: grid scans, Newton refinement, topology, continuation, stability, independent checks, findings page |
 | `threebody/` | Python package: equations, the regularized solver, exact solutions and presets, outcome analysis |
 | `tests/` | 21 validation tests (`python -m pytest -q tests`) |
 | `scripts/` | figure and animation rendering, Newton refinement of periodic orbits |
